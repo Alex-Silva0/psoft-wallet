@@ -59,7 +59,7 @@ class ClienteControllerTest {
                 .content(objectMapper.writeValueAsString(cliente)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nomeCompleto").value("João Silva"))
-                .andExpect(jsonPath("$.endereco").value("Rua das Flores, 123"))
+                .andExpect(jsonPath("$.enderecoPrincipal").value("Rua das Flores, 123"))
                 .andExpect(jsonPath("$.plano").value("NORMAL"))
                 .andExpect(jsonPath("$.codigoAcesso").doesNotExist())
                 .andReturn().getResponse().getContentAsString();
@@ -200,7 +200,7 @@ class ClienteControllerTest {
         mockMvc.perform(get("/clientes/{id}", id))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nomeCompleto").value("João Silva"))
-                .andExpect(jsonPath("$.endereco").value("Rua das Flores, 123"))
+                .andExpect(jsonPath("$.enderecoPrincipal").value("Rua das Flores, 123"))
                 .andExpect(jsonPath("$.plano").value("NORMAL"))
                 .andExpect(jsonPath("$.codigoAcesso").doesNotExist());
     }
@@ -243,7 +243,7 @@ class ClienteControllerTest {
                 .param("codigoAcesso", "123456"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nomeCompleto").value("João Silva Santos"))
-                .andExpect(jsonPath("$.endereco").value("Rua das Flores, 456"))
+                .andExpect(jsonPath("$.enderecoPrincipal").value("Rua das Flores, 456"))
                 .andExpect(jsonPath("$.plano").value("PREMIUM"))
                 .andExpect(jsonPath("$.codigoAcesso").doesNotExist());
     }

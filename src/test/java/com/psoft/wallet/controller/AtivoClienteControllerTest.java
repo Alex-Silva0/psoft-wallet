@@ -55,7 +55,7 @@ class AtivoClienteControllerTest {
         // Given - Criar cliente Normal
         Cliente cliente = new Cliente();
         cliente.setNomeCompleto("João Silva");
-        cliente.setEndereco("Rua das Flores, 123");
+        cliente.setEnderecoPrincipal("Rua das Flores, 123");
         cliente.setPlano(TipoPlano.NORMAL);
         cliente.setCodigoAcesso("123456");
 
@@ -67,7 +67,7 @@ class AtivoClienteControllerTest {
         // Given - Criar ativos de diferentes tipos
         Ativo tesouro = new Ativo();
         tesouro.setNome("Tesouro Selic 2026");
-        tesouro.setTipo(TipoAtivo.TESOURO);
+        tesouro.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro.setDescricao("Tesouro Direto Selic 2026");
         tesouro.setDisponivel(true);
         tesouro.setValorAtual(100.00f);
@@ -81,7 +81,7 @@ class AtivoClienteControllerTest {
 
         Ativo cripto = new Ativo();
         cripto.setNome("Bitcoin");
-        cripto.setTipo(TipoAtivo.CRIPTO);
+        cripto.setTipo(TipoAtivo.CRIPTOMOEDA);
         cripto.setDescricao("Bitcoin - primeira criptomoeda");
         cripto.setDisponivel(true);
         cripto.setValorAtual(150000.00f);
@@ -108,7 +108,7 @@ class AtivoClienteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].nome").value("Tesouro Selic 2026"))
-                .andExpect(jsonPath("$[0].tipo").value("TESOURO"));
+                .andExpect(jsonPath("$[0].tipo").value("TESOURO_DIRETO"));
     }
 
     @Test
@@ -116,7 +116,7 @@ class AtivoClienteControllerTest {
         // Given - Criar cliente Premium
         Cliente cliente = new Cliente();
         cliente.setNomeCompleto("Maria Santos");
-        cliente.setEndereco("Av. Principal, 456");
+        cliente.setEnderecoPrincipal("Av. Principal, 456");
         cliente.setPlano(TipoPlano.PREMIUM);
         cliente.setCodigoAcesso("654321");
 
@@ -128,7 +128,7 @@ class AtivoClienteControllerTest {
         // Given - Criar ativos de diferentes tipos
         Ativo tesouro = new Ativo();
         tesouro.setNome("Tesouro Selic 2026");
-        tesouro.setTipo(TipoAtivo.TESOURO);
+        tesouro.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro.setDescricao("Tesouro Direto Selic 2026");
         tesouro.setDisponivel(true);
         tesouro.setValorAtual(100.00f);
@@ -142,7 +142,7 @@ class AtivoClienteControllerTest {
 
         Ativo cripto = new Ativo();
         cripto.setNome("Bitcoin");
-        cripto.setTipo(TipoAtivo.CRIPTO);
+        cripto.setTipo(TipoAtivo.CRIPTOMOEDA);
         cripto.setDescricao("Bitcoin - primeira criptomoeda");
         cripto.setDisponivel(true);
         cripto.setValorAtual(150000.00f);
@@ -169,11 +169,11 @@ class AtivoClienteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(3)))
                 .andExpect(jsonPath("$[0].nome").value("Tesouro Selic 2026"))
-                .andExpect(jsonPath("$[0].tipo").value("TESOURO"))
+                .andExpect(jsonPath("$[0].tipo").value("TESOURO_DIRETO"))
                 .andExpect(jsonPath("$[1].nome").value("Petrobras"))
                 .andExpect(jsonPath("$[1].tipo").value("ACAO"))
                 .andExpect(jsonPath("$[2].nome").value("Bitcoin"))
-                .andExpect(jsonPath("$[2].tipo").value("CRIPTO"));
+                .andExpect(jsonPath("$[2].tipo").value("CRIPTOMOEDA"));
     }
 
     @Test
@@ -181,7 +181,7 @@ class AtivoClienteControllerTest {
         // Given - Criar cliente Normal
         Cliente cliente = new Cliente();
         cliente.setNomeCompleto("João Silva");
-        cliente.setEndereco("Rua das Flores, 123");
+        cliente.setEnderecoPrincipal("Rua das Flores, 123");
         cliente.setPlano(TipoPlano.NORMAL);
         cliente.setCodigoAcesso("123456");
 
@@ -200,7 +200,7 @@ class AtivoClienteControllerTest {
 
         Ativo cripto = new Ativo();
         cripto.setNome("Bitcoin");
-        cripto.setTipo(TipoAtivo.CRIPTO);
+        cripto.setTipo(TipoAtivo.CRIPTOMOEDA);
         cripto.setDescricao("Bitcoin - primeira criptomoeda");
         cripto.setDisponivel(true);
         cripto.setValorAtual(150000.00f);
@@ -228,7 +228,7 @@ class AtivoClienteControllerTest {
         // Given - Criar cliente Premium
         Cliente cliente = new Cliente();
         cliente.setNomeCompleto("Maria Santos");
-        cliente.setEndereco("Av. Principal, 456");
+        cliente.setEnderecoPrincipal("Av. Principal, 456");
         cliente.setPlano(TipoPlano.PREMIUM);
         cliente.setCodigoAcesso("654321");
 
@@ -240,7 +240,7 @@ class AtivoClienteControllerTest {
         // Given - Criar apenas Tesouro Direto
         Ativo tesouro = new Ativo();
         tesouro.setNome("Tesouro Selic 2026");
-        tesouro.setTipo(TipoAtivo.TESOURO);
+        tesouro.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro.setDescricao("Tesouro Direto Selic 2026");
         tesouro.setDisponivel(true);
         tesouro.setValorAtual(100.00f);
@@ -257,7 +257,7 @@ class AtivoClienteControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].nome").value("Tesouro Selic 2026"))
-                .andExpect(jsonPath("$[0].tipo").value("TESOURO"));
+                .andExpect(jsonPath("$[0].tipo").value("TESOURO_DIRETO"));
     }
 
     @Test
@@ -265,7 +265,7 @@ class AtivoClienteControllerTest {
         // Given - Criar cliente Normal
         Cliente cliente = new Cliente();
         cliente.setNomeCompleto("João Silva");
-        cliente.setEndereco("Rua das Flores, 123");
+        cliente.setEnderecoPrincipal("Rua das Flores, 123");
         cliente.setPlano(TipoPlano.NORMAL);
         cliente.setCodigoAcesso("123456");
 
@@ -277,7 +277,7 @@ class AtivoClienteControllerTest {
         // Given - Criar Tesouro Direto indisponível
         Ativo tesouroIndisponivel = new Ativo();
         tesouroIndisponivel.setNome("Tesouro Selic 2026");
-        tesouroIndisponivel.setTipo(TipoAtivo.TESOURO);
+        tesouroIndisponivel.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouroIndisponivel.setDescricao("Tesouro Direto Selic 2026");
         tesouroIndisponivel.setDisponivel(false);
         tesouroIndisponivel.setValorAtual(100.00f);
@@ -316,7 +316,7 @@ class AtivoClienteControllerTest {
         // Given - Criar cliente Premium
         Cliente cliente = new Cliente();
         cliente.setNomeCompleto("Maria Santos");
-        cliente.setEndereco("Av. Principal, 456");
+        cliente.setEnderecoPrincipal("Av. Principal, 456");
         cliente.setPlano(TipoPlano.PREMIUM);
         cliente.setCodigoAcesso("654321");
 
@@ -328,13 +328,13 @@ class AtivoClienteControllerTest {
         // Given - Criar múltiplos ativos de diferentes tipos
         Ativo tesouro1 = new Ativo();
         tesouro1.setNome("Tesouro Selic 2026");
-        tesouro1.setTipo(TipoAtivo.TESOURO);
+        tesouro1.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro1.setDisponivel(true);
         tesouro1.setValorAtual(100.00f);
 
         Ativo tesouro2 = new Ativo();
         tesouro2.setNome("Tesouro IPCA 2030");
-        tesouro2.setTipo(TipoAtivo.TESOURO);
+        tesouro2.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro2.setDisponivel(true);
         tesouro2.setValorAtual(150.00f);
 
@@ -352,13 +352,13 @@ class AtivoClienteControllerTest {
 
         Ativo cripto1 = new Ativo();
         cripto1.setNome("Bitcoin");
-        cripto1.setTipo(TipoAtivo.CRIPTO);
+        cripto1.setTipo(TipoAtivo.CRIPTOMOEDA);
         cripto1.setDisponivel(true);
         cripto1.setValorAtual(150000.00f);
 
         Ativo cripto2 = new Ativo();
         cripto2.setNome("Ethereum");
-        cripto2.setTipo(TipoAtivo.CRIPTO);
+        cripto2.setTipo(TipoAtivo.CRIPTOMOEDA);
         cripto2.setDisponivel(true);
         cripto2.setValorAtual(8000.00f);
 
@@ -405,7 +405,7 @@ class AtivoClienteControllerTest {
         // Given - Criar cliente Normal
         Cliente cliente = new Cliente();
         cliente.setNomeCompleto("João Silva");
-        cliente.setEndereco("Rua das Flores, 123");
+        cliente.setEnderecoPrincipal("Rua das Flores, 123");
         cliente.setPlano(TipoPlano.NORMAL);
         cliente.setCodigoAcesso("123456");
 
@@ -417,19 +417,19 @@ class AtivoClienteControllerTest {
         // Given - Criar múltiplos Tesouros Diretos (alguns indisponíveis)
         Ativo tesouro1 = new Ativo();
         tesouro1.setNome("Tesouro Selic 2026");
-        tesouro1.setTipo(TipoAtivo.TESOURO);
+        tesouro1.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro1.setDisponivel(true);
         tesouro1.setValorAtual(100.00f);
 
         Ativo tesouro2 = new Ativo();
         tesouro2.setNome("Tesouro IPCA 2030");
-        tesouro2.setTipo(TipoAtivo.TESOURO);
+        tesouro2.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro2.setDisponivel(false); // Indisponível
         tesouro2.setValorAtual(150.00f);
 
         Ativo tesouro3 = new Ativo();
         tesouro3.setNome("Tesouro Prefixado 2025");
-        tesouro3.setTipo(TipoAtivo.TESOURO);
+        tesouro3.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro3.setDisponivel(true);
         tesouro3.setValorAtual(120.00f);
 
