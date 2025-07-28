@@ -4,6 +4,8 @@ import org.springframework.stereotype.Service;
 import com.psoft.wallet.model.Ativo;
 import com.psoft.wallet.repository.AtivoRepository;
 
+import java.util.List;
+
 @Service
 public class AtivoService {
     private final AtivoRepository repository;
@@ -38,5 +40,25 @@ public class AtivoService {
             throw new AtivoNaoEncontradoException("Ativo com ID " + id + " não encontrado");
         }
         repository.deleteById(id);
+    }
+
+    public Ativo ativarDesativarAtivo(Long id, boolean ativo) {
+        Ativo ativoEncontrado = repository.findById(id)
+            .orElseThrow(() -> new AtivoNaoEncontradoException("Ativo com ID " + id + " não encontrado"));
+        
+        ativoEncontrado.setDisponivel(ativo);
+        return repository.save(ativoEncontrado);
+    }
+
+    public List<Ativo> listarAtivosDisponiveis() {
+        return repository.findByDisponivelTrue();
+    }
+
+    public List<Ativo> listarAtivosIndisponiveis() {
+        return repository.findByDisponivelFalse();
+    }
+
+    public List<Ativo> listarTodosAtivos() {
+        return repository.findAll();
     }
 }

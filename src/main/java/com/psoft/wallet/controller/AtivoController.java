@@ -4,6 +4,8 @@ import org.springframework.web.bind.annotation.*;
 import com.psoft.wallet.model.Ativo;
 import com.psoft.wallet.service.AtivoService;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/ativos")
 public class AtivoController {
@@ -26,5 +28,25 @@ public class AtivoController {
     @DeleteMapping("/{id}")
     public void removerAtivo(@PathVariable Long id) {
         service.removerAtivo(id);
+    }
+
+    @PatchMapping("/{id}/status")
+    public Ativo ativarDesativarAtivo(@PathVariable Long id, @RequestParam boolean ativo) {
+        return service.ativarDesativarAtivo(id, ativo);
+    }
+
+    @GetMapping
+    public List<Ativo> listarTodosAtivos() {
+        return service.listarTodosAtivos();
+    }
+
+    @GetMapping("/disponiveis")
+    public List<Ativo> listarAtivosDisponiveis() {
+        return service.listarAtivosDisponiveis();
+    }
+
+    @GetMapping("/indisponiveis")
+    public List<Ativo> listarAtivosIndisponiveis() {
+        return service.listarAtivosIndisponiveis();
     }
 }

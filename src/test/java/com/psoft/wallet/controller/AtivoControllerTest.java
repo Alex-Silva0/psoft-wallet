@@ -19,6 +19,7 @@ import org.springframework.web.context.WebApplicationContext;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.hasSize;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -465,5 +466,344 @@ class AtivoControllerTest {
 
         // Verificar se foi removido
         assertFalse(repository.existsById(id));
+    }
+
+    // US02 - Testes para ativar/desativar ativos
+
+    @Test
+    void testAtivarAtivoComSucesso() throws Exception {
+        // Given - Criar um ativo desativado
+        Ativo ativo = new Ativo();
+        ativo.setNome("Petrobras");
+        ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDisponivel(false);
+        ativo.setValorAtual(25.50f);
+
+        String response = mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        Long id = ativoSalvo.getId();
+
+        // When & Then - Ativar o ativo
+        mockMvc.perform(patch("/ativos/{id}/status", id)
+                .param("ativo", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.disponivel").value(true));
+
+        // Verificar se foi ativado no banco
+        Ativo ativoAtivado = repository.findById(id).orElse(null);
+        assertNotNull(ativoAtivado);
+        assertTrue(ativoAtivado.isDisponivel());
+    }
+
+    @Test
+    void testDesativarAtivoComSucesso() throws Exception {
+        // Given - Criar um ativo ativado
+        Ativo ativo = new Ativo();
+        ativo.setNome("Vale");
+        ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDisponivel(true);
+        ativo.setValorAtual(30.00f);
+
+        String response = mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        Long id = ativoSalvo.getId();
+
+        // When & Then - Desativar o ativo
+        mockMvc.perform(patch("/ativos/{id}/status", id)
+                .param("ativo", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.disponivel").value(false));
+
+        // Verificar se foi desativado no banco
+        Ativo ativoDesativado = repository.findById(id).orElse(null);
+        assertNotNull(ativoDesativado);
+        assertFalse(ativoDesativado.isDisponivel());
+    }
+
+    @Test
+    void testAtivarDesativarAtivoNaoEncontrado() throws Exception {
+        // When & Then - Tentar ativar ativo inexistente
+        mockMvc.perform(patch("/ativos/999/status")
+                .param("ativo", "true"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Ativo com ID 999 não encontrado"));
+    }
+
+    @Test
+    void testListarAtivosDisponiveis() throws Exception {
+        // Given - Criar ativos com diferentes status
+        Ativo ativo1 = new Ativo();
+        ativo1.setNome("Petrobras");
+        ativo1.setTipo(TipoAtivo.ACAO);
+        ativo1.setDisponivel(true);
+        ativo1.setValorAtual(25.50f);
+
+        Ativo ativo2 = new Ativo();
+        ativo2.setNome("Vale");
+        ativo2.setTipo(TipoAtivo.ACAO);
+        ativo2.setDisponivel(false);
+        ativo2.setValorAtual(30.00f);
+
+        Ativo ativo3 = new Ativo();
+        ativo3.setNome("Bitcoin");
+        ativo3.setTipo(TipoAtivo.CRIPTOMOEDA);
+        ativo3.setDisponivel(true);
+        ativo3.setValorAtual(150000.00f);
+
+        // Criar os ativos
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo1)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo2)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo3)))
+                .andExpect(status().isOk());
+
+        // When & Then - Listar apenas ativos disponíveis
+        mockMvc.perform(get("/ativos/disponiveis"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].nome").value("Petrobras"))
+                .andExpect(jsonPath("$[1].nome").value("Bitcoin"));
+    }
+
+    @Test
+    void testListarAtivosIndisponiveis() throws Exception {
+        // Given - Criar ativos com diferentes status
+        Ativo ativo1 = new Ativo();
+        ativo1.setNome("Petrobras");
+        ativo1.setTipo(TipoAtivo.ACAO);
+        ativo1.setDisponivel(true);
+        ativo1.setValorAtual(25.50f);
+
+        Ativo ativo2 = new Ativo();
+        ativo2.setNome("Vale");
+        ativo2.setTipo(TipoAtivo.ACAO);
+        ativo2.setDisponivel(false);
+        ativo2.setValorAtual(30.00f);
+
+        Ativo ativo3 = new Ativo();
+        ativo3.setNome("Tesouro Selic");
+        ativo3.setTipo(TipoAtivo.TESOURO_DIRETO);
+        ativo3.setDisponivel(false);
+        ativo3.setValorAtual(100.00f);
+
+        // Criar os ativos
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo1)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo2)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo3)))
+                .andExpect(status().isOk());
+
+        // When & Then - Listar apenas ativos indisponíveis
+        mockMvc.perform(get("/ativos/indisponiveis"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].nome").value("Vale"))
+                .andExpect(jsonPath("$[1].nome").value("Tesouro Selic"));
+    }
+
+    @Test
+    void testListarTodosAtivos() throws Exception {
+        // Given - Criar múltiplos ativos
+        Ativo ativo1 = new Ativo();
+        ativo1.setNome("Petrobras");
+        ativo1.setTipo(TipoAtivo.ACAO);
+        ativo1.setDisponivel(true);
+        ativo1.setValorAtual(25.50f);
+
+        Ativo ativo2 = new Ativo();
+        ativo2.setNome("Vale");
+        ativo2.setTipo(TipoAtivo.ACAO);
+        ativo2.setDisponivel(false);
+        ativo2.setValorAtual(30.00f);
+
+        Ativo ativo3 = new Ativo();
+        ativo3.setNome("Bitcoin");
+        ativo3.setTipo(TipoAtivo.CRIPTOMOEDA);
+        ativo3.setDisponivel(true);
+        ativo3.setValorAtual(150000.00f);
+
+        // Criar os ativos
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo1)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo2)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo3)))
+                .andExpect(status().isOk());
+
+        // When & Then - Listar todos os ativos
+        mockMvc.perform(get("/ativos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)));
+    }
+
+    @Test
+    void testFluxoCompletoAtivarDesativar() throws Exception {
+        // Given - Criar um ativo
+        Ativo ativo = new Ativo();
+        ativo.setNome("Teste Fluxo");
+        ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDisponivel(true);
+        ativo.setValorAtual(100.00f);
+
+        // When & Then - 1. Criar ativo
+        String response = mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        Long id = ativoSalvo.getId();
+
+        // Verificar se foi criado como disponível
+        assertTrue(repository.findById(id).orElse(null).isDisponivel());
+
+        // When & Then - 2. Desativar ativo
+        mockMvc.perform(patch("/ativos/{id}/status", id)
+                .param("ativo", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.disponivel").value(false));
+
+        // Verificar se foi desativado
+        assertFalse(repository.findById(id).orElse(null).isDisponivel());
+
+        // When & Then - 3. Reativar ativo
+        mockMvc.perform(patch("/ativos/{id}/status", id)
+                .param("ativo", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.disponivel").value(true));
+
+        // Verificar se foi reativado
+        assertTrue(repository.findById(id).orElse(null).isDisponivel());
+    }
+
+    @Test
+    void testAtivarDesativarComParametroInvalido() throws Exception {
+        // Given - Criar um ativo
+        Ativo ativo = new Ativo();
+        ativo.setNome("Teste Parametro");
+        ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setValorAtual(100.00f);
+
+        String response = mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        Long id = ativoSalvo.getId();
+
+        // When & Then - Tentar ativar com parâmetro inválido
+        mockMvc.perform(patch("/ativos/{id}/status", id)
+                .param("ativo", "invalido"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testAtivosDesativadosNaoAparecemEmDisponiveis() throws Exception {
+        // Given - Criar ativos mistos
+        Ativo ativo1 = new Ativo();
+        ativo1.setNome("Disponível");
+        ativo1.setTipo(TipoAtivo.ACAO);
+        ativo1.setDisponivel(true);
+        ativo1.setValorAtual(25.50f);
+
+        Ativo ativo2 = new Ativo();
+        ativo2.setNome("Indisponível");
+        ativo2.setTipo(TipoAtivo.ACAO);
+        ativo2.setDisponivel(false);
+        ativo2.setValorAtual(30.00f);
+
+        // Criar os ativos
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo1)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo2)))
+                .andExpect(status().isOk());
+
+        // When & Then - Verificar que apenas disponíveis aparecem na lista de disponíveis
+        mockMvc.perform(get("/ativos/disponiveis"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].nome").value("Disponível"));
+
+        // When & Then - Verificar que apenas indisponíveis aparecem na lista de indisponíveis
+        mockMvc.perform(get("/ativos/indisponiveis"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].nome").value("Indisponível"));
+    }
+
+    @Test
+    void testAtivosDesativadosAindaAparecemEmTodos() throws Exception {
+        // Given - Criar ativos mistos
+        Ativo ativo1 = new Ativo();
+        ativo1.setNome("Disponível");
+        ativo1.setTipo(TipoAtivo.ACAO);
+        ativo1.setDisponivel(true);
+        ativo1.setValorAtual(25.50f);
+
+        Ativo ativo2 = new Ativo();
+        ativo2.setNome("Indisponível");
+        ativo2.setTipo(TipoAtivo.ACAO);
+        ativo2.setDisponivel(false);
+        ativo2.setValorAtual(30.00f);
+
+        // Criar os ativos
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo1)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativo2)))
+                .andExpect(status().isOk());
+
+        // When & Then - Verificar que todos aparecem na lista geral
+        mockMvc.perform(get("/ativos"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)));
     }
 } 
