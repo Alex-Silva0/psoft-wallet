@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -42,6 +43,17 @@ class ClienteControllerTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     }
 
+    private String clienteAsJsonString(Cliente cliente) throws Exception {
+        // Cria um Map para contornar a anotação @JsonProperty(WRITE_ONLY) do modelo
+        // e garantir que o código de acesso seja incluído no payload do teste.
+        Map<String, Object> clienteMap = new java.util.HashMap<>();
+        clienteMap.put("nomeCompleto", cliente.getNomeCompleto());
+        clienteMap.put("enderecoPrincipal", cliente.getEnderecoPrincipal());
+        clienteMap.put("plano", cliente.getPlano());
+        clienteMap.put("codigoAcesso", cliente.getCodigoAcesso());
+        return objectMapper.writeValueAsString(clienteMap);
+    }
+
     // US04 - Testes para criar, ler, editar e remover clientes
 
     @Test
@@ -56,7 +68,7 @@ class ClienteControllerTest {
         // When & Then
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nomeCompleto").value("João Silva"))
                 .andExpect(jsonPath("$.enderecoPrincipal").value("Rua das Flores, 123"))
@@ -86,7 +98,7 @@ class ClienteControllerTest {
         // When & Then
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.plano").value("PREMIUM"))
                 .andExpect(jsonPath("$.codigoAcesso").doesNotExist());
@@ -104,7 +116,7 @@ class ClienteControllerTest {
         // When & Then
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Código de acesso deve ter exatamente 6 dígitos"));
     }
@@ -121,7 +133,7 @@ class ClienteControllerTest {
         // When & Then
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Código de acesso deve ter exatamente 6 dígitos"));
     }
@@ -137,7 +149,7 @@ class ClienteControllerTest {
         // When & Then
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Código de acesso deve ter exatamente 6 dígitos"));
     }
@@ -160,12 +172,12 @@ class ClienteControllerTest {
         // Criar os clientes
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente1)))
+                .content(clienteAsJsonString(cliente1)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente2)))
+                .content(clienteAsJsonString(cliente2)))
                 .andExpect(status().isOk());
 
         // When & Then - Listar todos os clientes
@@ -189,7 +201,7 @@ class ClienteControllerTest {
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -224,7 +236,7 @@ class ClienteControllerTest {
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -259,7 +271,7 @@ class ClienteControllerTest {
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -289,7 +301,7 @@ class ClienteControllerTest {
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -317,7 +329,7 @@ class ClienteControllerTest {
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -333,7 +345,7 @@ class ClienteControllerTest {
 
         mockMvc.perform(put("/clientes/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(clienteEditado))
+                .content(clienteAsJsonString(clienteEditado))
                 .param("codigoAcesso", "123456"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nomeCompleto").value("João Silva Santos"))
@@ -357,7 +369,7 @@ class ClienteControllerTest {
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -371,7 +383,7 @@ class ClienteControllerTest {
 
         mockMvc.perform(put("/clientes/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(clienteEditado))
+                .content(clienteAsJsonString(clienteEditado))
                 .param("codigoAcesso", "123456"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Código de acesso deve ter exatamente 6 dígitos"));
@@ -388,7 +400,7 @@ class ClienteControllerTest {
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -415,7 +427,7 @@ class ClienteControllerTest {
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -443,7 +455,7 @@ class ClienteControllerTest {
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
@@ -473,10 +485,8 @@ class ClienteControllerTest {
         cliente.setPlano(TipoPlano.NORMAL);
         cliente.setCodigoAcesso("123456");
 
-        mockMvc.perform(post("/clientes")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
-                .andExpect(status().isOk());
+        mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON)
+                .content(clienteAsJsonString(cliente))).andExpect(status().isOk());
 
         // When & Then - Validar acesso com código correto
         mockMvc.perform(get("/clientes/validar-acesso")
@@ -515,7 +525,7 @@ class ClienteControllerTest {
         // When & Then - 1. Criar cliente
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
+                .content(clienteAsJsonString(cliente)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 

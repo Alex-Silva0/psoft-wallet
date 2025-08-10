@@ -17,8 +17,8 @@ public class ClienteService {
     public Cliente criarCliente(Cliente cliente) {
         // Validar código de acesso (6 dígitos)
         if (cliente.getCodigoAcesso() == null || cliente.getCodigoAcesso().length() != 6 || 
-            !cliente.getCodigoAcesso().matches("\\d{6}")) {
-            throw new IllegalArgumentException("Código de acesso deve ter exatamente 6 dígitos");
+            !cliente.getCodigoAcesso().matches("^\\d{6}$")) {
+            throw new DadosInvalidosException("Código de acesso deve ter exatamente 6 dígitos");
         }
         
         return repository.save(cliente);
@@ -51,8 +51,8 @@ public class ClienteService {
 
         // Validar novo código de acesso se fornecido
         if (cliente.getCodigoAcesso() != null) {
-            if (cliente.getCodigoAcesso().length() != 6 || !cliente.getCodigoAcesso().matches("\\d{6}")) {
-                throw new IllegalArgumentException("Código de acesso deve ter exatamente 6 dígitos");
+            if (cliente.getCodigoAcesso().length() != 6 || !cliente.getCodigoAcesso().matches("^\\d{6}$")) {
+                throw new DadosInvalidosException("Código de acesso deve ter exatamente 6 dígitos");
             }
         }
 
@@ -82,14 +82,23 @@ public class ClienteService {
         repository.deleteById(id);
     }
 
-    public List<Cliente> listarAtivosPorPlano(String codigoAcesso) {
+    /**
+     * Valida o código de acesso e retorna o Cliente correspondente.
+     * Usado internamente por outros serviços.
+     * @param codigoAcesso O código de 6 dígitos do cliente.
+     * @return O objeto Cliente encontrado.
+     * @throws CodigoAcessoIncorretoException se o código for nulo ou não encontrado.
+     */
+    public Cliente validarAcesso(String codigoAcesso) {
         if (codigoAcesso == null) {
-            throw new CodigoAcessoIncorretoException("Código de acesso é obrigatório");
+            throw new CodigoAcessoIncorretoException("Código de acesso incorreto ou não informado");
         }
+        return repository.findByCodigoAcesso(codigoAcesso)
+                .orElseThrow(() -> new CodigoAcessoIncorretoException("Código de acesso incorreto"));
+    }
 
-        Cliente cliente = repository.findByCodigoAcesso(codigoAcesso)
-            .orElseThrow(() -> new CodigoAcessoIncorretoException("Código de acesso incorreto"));
-
+    public List<Cliente> listarAtivosPorPlano(String codigoAcesso) {
+        Cliente cliente = this.validarAcesso(codigoAcesso);
         // Retornar apenas o cliente (sem código de acesso) para validação
         cliente.setCodigoAcesso(null);
         return List.of(cliente);
