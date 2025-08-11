@@ -1,52 +1,58 @@
 package com.psoft.wallet.controller;
 
-import org.springframework.web.bind.annotation.*;
 import com.psoft.wallet.model.Ativo;
 import com.psoft.wallet.service.AtivoService;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/ativos")
 public class AtivoController {
-    private final AtivoService service;
 
-    public AtivoController(AtivoService service) {
-        this.service = service;
+    private final AtivoService ativoService;
+
+    public AtivoController(AtivoService ativoService) {
+        this.ativoService = ativoService;
     }
 
     @PostMapping
     public Ativo criarAtivo(@RequestBody Ativo ativo) {
-        return service.criarAtivo(ativo);
-    }
-
-    @PatchMapping("/{id}/valor")
-    public Ativo atualizarValor(@PathVariable Long id, @RequestParam float novoValor) {
-        return service.atualizarValor(id, novoValor);
-    }
-
-    @DeleteMapping("/{id}")
-    public void removerAtivo(@PathVariable Long id) {
-        service.removerAtivo(id);
-    }
-
-    @PatchMapping("/{id}/status")
-    public Ativo ativarDesativarAtivo(@PathVariable Long id, @RequestParam boolean ativo) {
-        return service.ativarDesativarAtivo(id, ativo);
+        return ativoService.criarAtivo(ativo);
     }
 
     @GetMapping
     public List<Ativo> listarTodosAtivos() {
-        return service.listarTodosAtivos();
+        return ativoService.listarTodosAtivos();
+    }
+
+    @GetMapping("/{id}")
+    public Ativo buscarAtivoPorId(@PathVariable Long id) {
+        return ativoService.buscarAtivoPorId(id);
     }
 
     @GetMapping("/disponiveis")
     public List<Ativo> listarAtivosDisponiveis() {
-        return service.listarAtivosDisponiveis();
+        return ativoService.listarAtivosDisponiveis();
     }
 
     @GetMapping("/indisponiveis")
     public List<Ativo> listarAtivosIndisponiveis() {
-        return service.listarAtivosIndisponiveis();
+        return ativoService.listarAtivosIndisponiveis();
+    }
+
+    @DeleteMapping("/{id}")
+    public void removerAtivo(@PathVariable Long id) {
+        ativoService.removerAtivo(id);
+    }
+
+    @PatchMapping("/{id}/valor")
+    public Ativo atualizarValorAtivo(@PathVariable Long id, @RequestParam float novoValor) {
+        return ativoService.atualizarPrecoAtivo(id, novoValor);
+    }
+
+    @PatchMapping("/{id}/status")
+    public Ativo atualizarStatusAtivo(@PathVariable Long id, @RequestParam boolean ativo) {
+        return ativoService.atualizarStatusAtivo(id, ativo);
     }
 }

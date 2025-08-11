@@ -1,6 +1,7 @@
 package com.psoft.wallet.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Entity
@@ -12,9 +13,10 @@ public class Cliente {
 
     private String nomeCompleto;
     private String enderecoPrincipal;
-    
+
     @Enumerated(EnumType.STRING)
     private TipoPlano plano;
-    
-    private String codigoAcesso; // 6 dígitos
-} 
+
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private String codigoAcesso;
+}

@@ -1,13 +1,18 @@
 package com.psoft.wallet.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.psoft.wallet.model.Ativo;
-import com.psoft.wallet.model.TipoAtivo;
+import com.psoft.wallet.model.*;
 import com.psoft.wallet.repository.AtivoRepository;
+import com.psoft.wallet.repository.ClienteRepository;
+import com.psoft.wallet.repository.InteresseRepository;
+import com.psoft.wallet.service.NotificationService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -34,15 +39,30 @@ class AtivoControllerTest {
     private AtivoRepository repository;
 
     @Autowired
+    private ClienteRepository clienteRepository;
+
+    @Autowired
+    private InteresseRepository interesseRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
+
+    @SuppressWarnings("removal")
+    @MockBean
+    private NotificationService notificationService;
 
     private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
+        interesseRepository.deleteAll();
+        clienteRepository.deleteAll();
         repository.deleteAll();
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     }
+
+    @AfterEach
+    void tearDown() {}
 
     // US01 - Testes para criar, editar e remover ativos
 
@@ -261,6 +281,54 @@ class AtivoControllerTest {
                 .param("novoValor", "30.00"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Ativo com ID 999 não encontrado"));
+    }
+
+    @Test
+    void testTentarAtualizarValorTesouroDireto() throws Exception {
+        // Given - Criar um ativo do tipo Tesouro Direto
+        Ativo tesouro = new Ativo();
+        tesouro.setNome("Tesouro Selic 2029");
+        tesouro.setTipo(TipoAtivo.TESOURO_DIRETO);
+        tesouro.setValorAtual(120.00f);
+
+        String response = mockMvc.perform(post("/ativos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(tesouro)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        Long id = ativoSalvo.getId();
+
+        // When & Then - Tentar atualizar o valor
+        mockMvc.perform(patch("/ativos/{id}/valor", id)
+                        .param("novoValor", "125.00"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Não é permitido atualizar o valor de um ativo do tipo Tesouro Direto."));
+    }
+
+    @Test
+    void testTentarAtualizarValorComValorAtualZero() throws Exception {
+        // Given - Criar um ativo com valor atual zero
+        Ativo ativo = new Ativo();
+        ativo.setNome("Ação Zero");
+        ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setValorAtual(0.00f);
+
+        String response = mockMvc.perform(post("/ativos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(ativo)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        Long id = ativoSalvo.getId();
+
+        // When & Then - Tentar atualizar o valor
+        mockMvc.perform(patch("/ativos/{id}/valor", id)
+                        .param("novoValor", "10.00"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Não é possível calcular a variação de um ativo com valor atual zero."));
     }
 
     @Test
@@ -673,6 +741,42 @@ class AtivoControllerTest {
     }
 
     @Test
+    void testBuscarAtivoPorIdComSucesso() throws Exception {
+        // Given - Criar um ativo completo
+        Ativo ativo = new Ativo();
+        ativo.setNome("ETF Brasil");
+        ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDescricao("Fundo de índice brasileiro");
+        ativo.setDisponivel(true);
+        ativo.setValorAtual(123.45f);
+
+        String response = mockMvc.perform(post("/ativos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(ativo)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Ativo salvo = objectMapper.readValue(response, Ativo.class);
+
+        // When & Then - Buscar por ID e verificar campos detalhados
+        mockMvc.perform(get("/ativos/{id}", salvo.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("ETF Brasil"))
+                .andExpect(jsonPath("$.tipo").value("ACAO"))
+                .andExpect(jsonPath("$.descricao").value("Fundo de índice brasileiro"))
+                .andExpect(jsonPath("$.disponivel").value(true))
+                .andExpect(jsonPath("$.valorAtual").value(123.45));
+    }
+
+    @Test
+    void testBuscarAtivoPorIdNaoEncontrado() throws Exception {
+        // When & Then
+        mockMvc.perform(get("/ativos/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Ativo com ID 999 não encontrado"));
+    }
+
+    @Test
     void testFluxoCompletoAtivarDesativar() throws Exception {
         // Given - Criar um ativo
         Ativo ativo = new Ativo();
@@ -806,4 +910,137 @@ class AtivoControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)));
     }
-} 
+
+    // US06 & US07 - Testes de Notificação (Side-effects de US02 e US03)
+
+    @Test
+    void testAtivarAtivoNotificaClienteInteressado() throws Exception {
+        // Given - Criar cliente e ativo indisponível
+        Cliente cliente = new Cliente();
+        cliente.setNomeCompleto("Cliente Interessado");
+        cliente.setPlano(TipoPlano.NORMAL);
+        cliente.setCodigoAcesso("123123");
+        clienteRepository.save(cliente);
+
+        Ativo ativo = new Ativo();
+        ativo.setNome("Ação Indisponível");
+        ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDisponivel(false);
+        ativo.setValorAtual(50.0f);
+        repository.save(ativo);
+
+        // Given - Cliente marca interesse no ativo indisponível (US07)
+        Interesse interesse = Interesse.builder()
+                .cliente(cliente)
+                .ativo(ativo)
+                .precoNoRegistro(null) // Interesse em disponibilidade
+                .build();
+        interesseRepository.save(interesse);
+
+        // When - Ativar o ativo
+        mockMvc.perform(patch("/ativos/{id}/status", ativo.getId())
+                        .param("ativo", "true"))
+                .andExpect(status().isOk());
+
+        // Then - Verificar se o serviço de notificação foi chamado corretamente
+        Mockito.verify(notificationService, Mockito.times(1))
+                .notificarDisponibilidade(cliente, ativo);
+
+        // Then - Verificar se o interesse foi removido (comportamento esperado do serviço)
+        assertFalse(interesseRepository.findById(interesse.getId()).isPresent());
+    }
+
+    @Test
+    void testAtualizarValorNotificaClienteComVariacaoPositiva() throws Exception {
+        // Given - Criar cliente premium e ativo disponível
+        Cliente cliente = new Cliente();
+        cliente.setNomeCompleto("Cliente Premium Notif");
+        cliente.setPlano(TipoPlano.PREMIUM);
+        cliente.setCodigoAcesso("789789");
+        clienteRepository.save(cliente);
+
+        Ativo ativo = new Ativo();
+        ativo.setNome("Ação para Notificação");
+        ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDisponivel(true);
+        ativo.setValorAtual(100.0f);
+        repository.save(ativo);
+
+        // Given - Cliente marca interesse na variação de preço (US06)
+        Interesse interesse = Interesse.builder()
+                .cliente(cliente)
+                .ativo(ativo)
+                .precoNoRegistro(100.0f) // Interesse em variação de preço
+                .build();
+        interesseRepository.save(interesse);
+
+        // When - Atualizar o valor com variação > 10%
+        mockMvc.perform(patch("/ativos/{id}/valor", ativo.getId())
+                        .param("novoValor", "115.00")) // Variação de +15%
+                .andExpect(status().isOk());
+
+        // Then - Verificar se o serviço de notificação foi chamado com os parâmetros corretos
+        Mockito.verify(notificationService, Mockito.times(1))
+                .notificarVariacaoPreco(cliente, ativo, 100.0f, 115.0f);
+    }
+
+    @Test
+    void testAtualizarValorNotificaClienteComVariacaoNegativa() throws Exception {
+        // Given
+        Cliente cliente = new Cliente();
+        cliente.setNomeCompleto("Cliente Premium Notif");
+        cliente.setPlano(TipoPlano.PREMIUM);
+        cliente.setCodigoAcesso("789789");
+        clienteRepository.save(cliente);
+
+        Ativo ativo = new Ativo();
+        ativo.setNome("Ação para Notificação");
+        ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDisponivel(true);
+        ativo.setValorAtual(100.0f);
+        repository.save(ativo);
+
+        Interesse interesse = Interesse.builder()
+                .cliente(cliente)
+                .ativo(ativo)
+                .precoNoRegistro(100.0f)
+                .build();
+        interesseRepository.save(interesse);
+
+        // When - Atualizar o valor com variação < -10%
+        mockMvc.perform(patch("/ativos/{id}/valor", ativo.getId())
+                        .param("novoValor", "85.00")) // Variação de -15%
+                .andExpect(status().isOk());
+
+        // Then - Verificar se o serviço de notificação foi chamado com os parâmetros corretos
+        Mockito.verify(notificationService, Mockito.times(1))
+                .notificarVariacaoPreco(cliente, ativo, 100.0f, 85.0f);
+    }
+
+    @Test
+    void testAtualizarValorNaoNotificaComVariacaoMenorQue10Porcento() throws Exception {
+        // Given
+        Cliente cliente = new Cliente();
+        cliente.setNomeCompleto("Cliente Premium Notif");
+        cliente.setPlano(TipoPlano.PREMIUM);
+        cliente.setCodigoAcesso("789789");
+        clienteRepository.save(cliente);
+        Ativo ativo = new Ativo();
+        ativo.setNome("Ação para Notificação");
+        ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDisponivel(true);
+        ativo.setValorAtual(100.0f);
+        repository.save(ativo);
+        Interesse interesse = Interesse.builder().cliente(cliente).ativo(ativo).precoNoRegistro(100.0f).build();
+        interesseRepository.save(interesse);
+
+        // When - Atualizar o valor com variação < 10%
+        mockMvc.perform(patch("/ativos/{id}/valor", ativo.getId())
+                        .param("novoValor", "105.00")) // Variação de +5%
+                .andExpect(status().isOk());
+
+        // Then - Verificar que o serviço de notificação NUNCA foi chamado
+        Mockito.verify(notificationService, Mockito.never())
+                .notificarVariacaoPreco(Mockito.any(), Mockito.any(), Mockito.anyFloat(), Mockito.anyFloat());
+    }
+}

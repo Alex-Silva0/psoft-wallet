@@ -48,21 +48,25 @@ class AtivoClienteControllerTest {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
     }
 
+    private void criarCliente(String nome, String endereco, TipoPlano plano, String codigoAcesso) throws Exception {
+        // Criamos o JSON manualmente para garantir que o campo 'codigoAcesso' (marcado como WRITE_ONLY)
+        // seja incluído no payload da requisição, contornando a lógica de serialização do ObjectMapper.
+        String clienteJson = String.format(
+                "{\"nomeCompleto\":\"%s\",\"enderecoPrincipal\":\"%s\",\"plano\":\"%s\",\"codigoAcesso\":\"%s\"}",
+                nome, endereco, plano.name(), codigoAcesso
+        );
+        mockMvc.perform(post("/clientes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(clienteJson))
+                .andExpect(status().isOk());
+    }
+
     // US05 - Testes para visualizar ativos disponíveis para o plano
 
     @Test
     void testClienteNormalVeApenasTesouroDireto() throws Exception {
         // Given - Criar cliente Normal
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("123456");
-
-        mockMvc.perform(post("/clientes")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
-                .andExpect(status().isOk());
+        criarCliente("João Silva", "Rua das Flores, 123", TipoPlano.NORMAL, "123456");
 
         // Given - Criar ativos de diferentes tipos
         Ativo tesouro = new Ativo();
@@ -114,16 +118,7 @@ class AtivoClienteControllerTest {
     @Test
     void testClientePremiumVeTodosOsTipos() throws Exception {
         // Given - Criar cliente Premium
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("Maria Santos");
-        cliente.setEnderecoPrincipal("Av. Principal, 456");
-        cliente.setPlano(TipoPlano.PREMIUM);
-        cliente.setCodigoAcesso("654321");
-
-        mockMvc.perform(post("/clientes")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
-                .andExpect(status().isOk());
+        criarCliente("Maria Santos", "Av. Principal, 456", TipoPlano.PREMIUM, "654321");
 
         // Given - Criar ativos de diferentes tipos
         Ativo tesouro = new Ativo();
@@ -179,16 +174,7 @@ class AtivoClienteControllerTest {
     @Test
     void testClienteNormalNaoVeAcoesOuCriptomoedas() throws Exception {
         // Given - Criar cliente Normal
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("123456");
-
-        mockMvc.perform(post("/clientes")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
-                .andExpect(status().isOk());
+        criarCliente("João Silva", "Rua das Flores, 123", TipoPlano.NORMAL, "123456");
 
         // Given - Criar apenas ações e criptomoedas (sem Tesouro Direto)
         Ativo acao = new Ativo();
@@ -226,16 +212,7 @@ class AtivoClienteControllerTest {
     @Test
     void testClientePremiumVeApenasTesouroDiretoQuandoSoExisteTesouro() throws Exception {
         // Given - Criar cliente Premium
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("Maria Santos");
-        cliente.setEnderecoPrincipal("Av. Principal, 456");
-        cliente.setPlano(TipoPlano.PREMIUM);
-        cliente.setCodigoAcesso("654321");
-
-        mockMvc.perform(post("/clientes")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
-                .andExpect(status().isOk());
+        criarCliente("Maria Santos", "Av. Principal, 456", TipoPlano.PREMIUM, "654321");
 
         // Given - Criar apenas Tesouro Direto
         Ativo tesouro = new Ativo();
@@ -263,16 +240,7 @@ class AtivoClienteControllerTest {
     @Test
     void testClienteNaoVeAtivosIndisponiveis() throws Exception {
         // Given - Criar cliente Normal
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("123456");
-
-        mockMvc.perform(post("/clientes")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
-                .andExpect(status().isOk());
+        criarCliente("João Silva", "Rua das Flores, 123", TipoPlano.NORMAL, "123456");
 
         // Given - Criar Tesouro Direto indisponível
         Ativo tesouroIndisponivel = new Ativo();
@@ -314,16 +282,7 @@ class AtivoClienteControllerTest {
     @Test
     void testClientePremiumVeMultiplosAtivos() throws Exception {
         // Given - Criar cliente Premium
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("Maria Santos");
-        cliente.setEnderecoPrincipal("Av. Principal, 456");
-        cliente.setPlano(TipoPlano.PREMIUM);
-        cliente.setCodigoAcesso("654321");
-
-        mockMvc.perform(post("/clientes")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
-                .andExpect(status().isOk());
+        criarCliente("Maria Santos", "Av. Principal, 456", TipoPlano.PREMIUM, "654321");
 
         // Given - Criar múltiplos ativos de diferentes tipos
         Ativo tesouro1 = new Ativo();
@@ -403,16 +362,7 @@ class AtivoClienteControllerTest {
     @Test
     void testClienteNormalVeApenasTesourosDisponiveis() throws Exception {
         // Given - Criar cliente Normal
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("123456");
-
-        mockMvc.perform(post("/clientes")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(cliente)))
-                .andExpect(status().isOk());
+        criarCliente("João Silva", "Rua das Flores, 123", TipoPlano.NORMAL, "123456");
 
         // Given - Criar múltiplos Tesouros Diretos (alguns indisponíveis)
         Ativo tesouro1 = new Ativo();
