@@ -36,6 +36,11 @@ public class AtivoService {
         return ativoRepository.findAll();
     }
 
+    public Ativo buscarAtivoPorId(Long id) {
+        return ativoRepository.findById(id)
+                .orElseThrow(() -> new AtivoNaoEncontradoException("Ativo com ID " + id + " não encontrado"));
+    }
+
     public List<Ativo> listarAtivosIndisponiveis() {
         return ativoRepository.findAll().stream().filter(a -> !a.isDisponivel()).collect(Collectors.toList());
     }

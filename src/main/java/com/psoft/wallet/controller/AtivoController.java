@@ -26,6 +26,11 @@ public class AtivoController {
         return ativoService.listarTodosAtivos();
     }
 
+    @GetMapping("/{id}")
+    public Ativo buscarAtivoPorId(@PathVariable Long id) {
+        return ativoService.buscarAtivoPorId(id);
+    }
+
     @GetMapping("/disponiveis")
     public List<Ativo> listarAtivosDisponiveis() {
         return ativoService.listarAtivosDisponiveis();

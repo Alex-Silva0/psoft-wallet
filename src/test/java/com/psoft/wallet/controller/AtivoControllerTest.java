@@ -30,7 +30,6 @@ import static org.hamcrest.Matchers.hasSize;
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Transactional
-@SuppressWarnings("deprecation")
 class AtivoControllerTest {
 
     @Autowired
@@ -48,6 +47,7 @@ class AtivoControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @SuppressWarnings("removal")
     @MockBean
     private NotificationService notificationService;
 
@@ -738,6 +738,42 @@ class AtivoControllerTest {
         mockMvc.perform(get("/ativos"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(3)));
+    }
+
+    @Test
+    void testBuscarAtivoPorIdComSucesso() throws Exception {
+        // Given - Criar um ativo completo
+        Ativo ativo = new Ativo();
+        ativo.setNome("ETF Brasil");
+        ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDescricao("Fundo de índice brasileiro");
+        ativo.setDisponivel(true);
+        ativo.setValorAtual(123.45f);
+
+        String response = mockMvc.perform(post("/ativos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(ativo)))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        Ativo salvo = objectMapper.readValue(response, Ativo.class);
+
+        // When & Then - Buscar por ID e verificar campos detalhados
+        mockMvc.perform(get("/ativos/{id}", salvo.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nome").value("ETF Brasil"))
+                .andExpect(jsonPath("$.tipo").value("ACAO"))
+                .andExpect(jsonPath("$.descricao").value("Fundo de índice brasileiro"))
+                .andExpect(jsonPath("$.disponivel").value(true))
+                .andExpect(jsonPath("$.valorAtual").value(123.45));
+    }
+
+    @Test
+    void testBuscarAtivoPorIdNaoEncontrado() throws Exception {
+        // When & Then
+        mockMvc.perform(get("/ativos/999"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Ativo com ID 999 não encontrado"));
     }
 
     @Test
