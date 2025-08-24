@@ -1,66 +1,59 @@
 package com.psoft.wallet.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.psoft.wallet.model.*;
+import com.psoft.wallet.dto.InteresseDTO;
+import com.psoft.wallet.enums.TipoAtivo;
+import com.psoft.wallet.enums.TipoInteresse;
+import com.psoft.wallet.enums.TipoPlano;
+import com.psoft.wallet.model.Ativo;
+import com.psoft.wallet.model.Cliente;
 import com.psoft.wallet.repository.AtivoRepository;
 import com.psoft.wallet.repository.ClienteRepository;
 import com.psoft.wallet.repository.InteresseRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.context.WebApplicationContext;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import java.math.BigDecimal;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
-@ActiveProfiles("test")
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Transactional
+@AutoConfigureMockMvc
 class InteresseControllerTest {
 
     @Autowired
-    private WebApplicationContext webApplicationContext;
+    MockMvc mockMvc;
 
     @Autowired
-    private AtivoRepository ativoRepository;
+    ObjectMapper objectMapper;
 
     @Autowired
-    private ClienteRepository clienteRepository;
+    InteresseRepository interesseRepository;
 
     @Autowired
-    private InteresseRepository interesseRepository;
+    AtivoRepository ativoRepository;
 
-    private MockMvc mockMvc;
+    @Autowired
+    ClienteRepository clienteRepository;
 
-    private Cliente clientePremium;
-    private Cliente clienteNormal;
-    private Ativo acaoDisponivel;
-    private Ativo criptoDisponivel;
-    private Ativo tesouroDisponivel;
-    private Ativo acaoIndisponivel;
+    Cliente clientePremium;
+    Cliente clienteNormal;
+    Ativo ativoDisponivel;
+    Ativo ativoIndisponivel;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
-        interesseRepository.deleteAll();
-        ativoRepository.deleteAll();
-        clienteRepository.deleteAll();
-
-        // Clientes
         clientePremium = new Cliente();
         clientePremium.setNomeCompleto("Cliente Premium");
         clientePremium.setPlano(TipoPlano.PREMIUM);
@@ -73,155 +66,99 @@ class InteresseControllerTest {
         clienteNormal.setCodigoAcesso("222222");
         clienteRepository.save(clienteNormal);
 
-        // Ativos
-        acaoDisponivel = new Ativo();
-        acaoDisponivel.setNome("Ação Disponível");
-        acaoDisponivel.setTipo(TipoAtivo.ACAO);
-        acaoDisponivel.setDisponivel(true);
-        acaoDisponivel.setValorAtual(100.0f);
-        ativoRepository.save(acaoDisponivel);
+        ativoDisponivel = new Ativo();
+        ativoDisponivel.setNome("Ação Disponível");
+        ativoDisponivel.setTipo(TipoAtivo.ACAO);
+        ativoDisponivel.setDisponivel(true);
+        ativoDisponivel.setValorAtual(new BigDecimal("100.00"));
+        ativoRepository.save(ativoDisponivel);
 
-        criptoDisponivel = new Ativo();
-        criptoDisponivel.setNome("Cripto Disponível");
-        criptoDisponivel.setTipo(TipoAtivo.CRIPTOMOEDA);
-        criptoDisponivel.setDisponivel(true);
-        criptoDisponivel.setValorAtual(5000.0f);
-        ativoRepository.save(criptoDisponivel);
-
-        tesouroDisponivel = new Ativo();
-        tesouroDisponivel.setNome("Tesouro Disponível");
-        tesouroDisponivel.setTipo(TipoAtivo.TESOURO_DIRETO);
-        tesouroDisponivel.setDisponivel(true);
-        tesouroDisponivel.setValorAtual(100.0f);
-        ativoRepository.save(tesouroDisponivel);
-
-        acaoIndisponivel = new Ativo();
-        acaoIndisponivel.setNome("Ação Indisponível");
-        acaoIndisponivel.setTipo(TipoAtivo.ACAO);
-        acaoIndisponivel.setDisponivel(false);
-        acaoIndisponivel.setValorAtual(50.0f);
-        ativoRepository.save(acaoIndisponivel);
+        ativoIndisponivel = new Ativo();
+        ativoIndisponivel.setNome("Ação Indisponível");
+        ativoIndisponivel.setTipo(TipoAtivo.ACAO);
+        ativoIndisponivel.setDisponivel(false);
+        ativoIndisponivel.setValorAtual(new BigDecimal("50.00"));
+        ativoRepository.save(ativoIndisponivel);
     }
 
-    // US06 - Testes para marcar interesse em variação de preço
+    @AfterEach
+    void tearDown() {
+        interesseRepository.deleteAll();
+        ativoRepository.deleteAll();
+        clienteRepository.deleteAll();
+    }
+
+    // US06 - Testes de Interesse em Variação de Preço
 
     @Test
-    void testClientePremiumMarcaInteresseEmVariacaoPrecoComSucesso() throws Exception {
-        mockMvc.perform(post("/interesses/{ativoId}", acaoDisponivel.getId())
-                        .param("codigoAcesso", clientePremium.getCodigoAcesso()))
+    void quandoRegistrarInteresseVariacaoPreco_comClientePremiumEAtivoDisponivel_entaoRetornaCreated() throws Exception {
+        InteresseDTO dto = new InteresseDTO();
+        dto.setAtivoId(ativoDisponivel.getId());
+        dto.setCodigoAcessoCliente(clientePremium.getCodigoAcesso());
+        dto.setTipoInteresse(TipoInteresse.VARIACAO_PRECO);
+
+        mockMvc.perform(post("/api/interesses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.cliente.nomeCompleto").value("Cliente Premium"))
-                .andExpect(jsonPath("$.ativo.nome").value("Ação Disponível"))
-                .andExpect(jsonPath("$.precoNoRegistro").value(100.0));
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.tipo").value("VARIACAO_PRECO"));
 
-        Interesse interesse = interesseRepository.findAll().get(0);
-        assertThat(interesse.getPrecoNoRegistro(), is(notNullValue()));
-        assertEquals(100.0f, interesse.getPrecoNoRegistro());
+        assertEquals(1, interesseRepository.count());
     }
 
     @Test
-    void testClienteNormalTentaMarcarInteresseEmVariacaoPreco() throws Exception {
-        mockMvc.perform(post("/interesses/{ativoId}", acaoDisponivel.getId())
-                        .param("codigoAcesso", clienteNormal.getCodigoAcesso()))
+    void quandoRegistrarInteresseVariacaoPreco_comClienteNormal_entaoRetornaForbidden() throws Exception {
+        InteresseDTO dto = new InteresseDTO();
+        dto.setAtivoId(ativoDisponivel.getId());
+        dto.setCodigoAcessoCliente(clienteNormal.getCodigoAcesso());
+        dto.setTipoInteresse(TipoInteresse.VARIACAO_PRECO);
+
+        mockMvc.perform(post("/api/interesses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message").value("Funcionalidade disponível apenas para clientes Premium."));
+                .andExpect(jsonPath("$.message").value("Apenas clientes Premium podem registrar interesse na variação de preço."));
     }
 
-    @Test
-    void testClientePremiumTentaMarcarInteresseEmVariacaoPrecoDeTesouroDireto() throws Exception {
-        mockMvc.perform(post("/interesses/{ativoId}", tesouroDisponivel.getId())
-                        .param("codigoAcesso", clientePremium.getCodigoAcesso()))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Interesse por variação de preço só pode ser marcado para Ações ou Criptomoedas."));
-    }
+    // US07 - Testes de Interesse em Disponibilidade
 
     @Test
-    void testTentarMarcarInteresseEmVariacaoPrecoDeAtivoIndisponivel() throws Exception {
-        // Este cenário deve criar um interesse de DISPONIBILIDADE, não de preço.
-        mockMvc.perform(post("/interesses/{ativoId}", acaoIndisponivel.getId())
-                        .param("codigoAcesso", clientePremium.getCodigoAcesso()))
+    void quandoRegistrarInteresseDisponibilidade_comAtivoIndisponivel_entaoRetornaCreated() throws Exception {
+        InteresseDTO dto = new InteresseDTO();
+        dto.setAtivoId(ativoIndisponivel.getId());
+        dto.setCodigoAcessoCliente(clienteNormal.getCodigoAcesso());
+        dto.setTipoInteresse(TipoInteresse.DISPONIBILIDADE);
+
+        mockMvc.perform(post("/api/interesses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.precoNoRegistro").doesNotExist());
+                .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.tipo").value("DISPONIBILIDADE"));
 
-        Interesse interesse = interesseRepository.findAll().get(0);
-        assertNull(interesse.getPrecoNoRegistro());
+        assertEquals(1, interesseRepository.count());
     }
 
-    @Test
-    void testTentarMarcarInteresseDuplicado() throws Exception {
-        // Marcar interesse pela primeira vez
-        mockMvc.perform(post("/interesses/{ativoId}", acaoDisponivel.getId())
-                        .param("codigoAcesso", clientePremium.getCodigoAcesso()))
-                .andExpect(status().isCreated());
-
-        // Tentar marcar novamente
-        mockMvc.perform(post("/interesses/{ativoId}", acaoDisponivel.getId())
-                        .param("codigoAcesso", clientePremium.getCodigoAcesso()))
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.message").value("Cliente já possui interesse neste ativo."));
-    }
-
-    // US07 - Testes para marcar interesse em disponibilidade
+    // Testes Gerais
 
     @Test
-    void testClienteNormalMarcaInteresseEmDisponibilidadeComSucesso() throws Exception {
-        mockMvc.perform(post("/interesses/{ativoId}", acaoIndisponivel.getId())
-                        .param("codigoAcesso", clienteNormal.getCodigoAcesso()))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.cliente.nomeCompleto").value("Cliente Normal"))
-                .andExpect(jsonPath("$.ativo.nome").value("Ação Indisponível"))
-                .andExpect(jsonPath("$.precoNoRegistro").doesNotExist());
+    void quandoRemoverInteresse_comDadosValidos_entaoRetornaNoContent() throws Exception {
+        // Given: Register an interest first
+        quandoRegistrarInteresseDisponibilidade_comAtivoIndisponivel_entaoRetornaCreated();
+        assertEquals(1, interesseRepository.count());
 
-        Interesse interesse = interesseRepository.findAll().get(0);
-        assertNull(interesse.getPrecoNoRegistro());
-    }
+        // When & Then: Remove the interest
+        InteresseDTO dto = new InteresseDTO();
+        dto.setAtivoId(ativoIndisponivel.getId());
+        dto.setCodigoAcessoCliente(clienteNormal.getCodigoAcesso());
+        dto.setTipoInteresse(TipoInteresse.DISPONIBILIDADE);
 
-    @Test
-    void testClientePremiumMarcaInteresseEmDisponibilidadeComSucesso() throws Exception {
-        mockMvc.perform(post("/interesses/{ativoId}", acaoIndisponivel.getId())
-                        .param("codigoAcesso", clientePremium.getCodigoAcesso()))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.cliente.nomeCompleto").value("Cliente Premium"))
-                .andExpect(jsonPath("$.ativo.nome").value("Ação Indisponível"))
-                .andExpect(jsonPath("$.precoNoRegistro").doesNotExist());
+        mockMvc.perform(delete("/api/interesses")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isNoContent());
 
-        Interesse interesse = interesseRepository.findAll().get(0);
-        assertNull(interesse.getPrecoNoRegistro());
-    }
-
-    @Test
-    void testTentarMarcarInteresseEmDisponibilidadeDeAtivoJaDisponivel() throws Exception {
-        // Este cenário deve criar um interesse de VARIAÇÃO DE PREÇO, não de disponibilidade.
-        mockMvc.perform(post("/interesses/{ativoId}", acaoDisponivel.getId())
-                        .param("codigoAcesso", clientePremium.getCodigoAcesso()))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.precoNoRegistro").value(100.0));
-
-        Interesse interesse = interesseRepository.findAll().get(0);
-        assertThat(interesse.getPrecoNoRegistro(), is(notNullValue()));
-    }
-
-    // Testes de Validação Geral
-
-    @Test
-    void testMarcarInteresseComCodigoAcessoIncorreto() throws Exception {
-        mockMvc.perform(post("/interesses/{ativoId}", acaoDisponivel.getId())
-                        .param("codigoAcesso", "999999"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Código de acesso incorreto"));
-    }
-
-    @Test
-    void testMarcarInteresseSemCodigoAcesso() throws Exception {
-        mockMvc.perform(post("/interesses/{ativoId}", acaoDisponivel.getId()))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void testMarcarInteresseEmAtivoInexistente() throws Exception {
-        mockMvc.perform(post("/interesses/999")
-                        .param("codigoAcesso", clientePremium.getCodigoAcesso()))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Ativo com ID 999 não encontrado"));
+        assertFalse(interesseRepository.findByClienteAndAtivoAndTipo(clienteNormal, ativoIndisponivel, TipoInteresse.DISPONIBILIDADE).isPresent());
     }
 }

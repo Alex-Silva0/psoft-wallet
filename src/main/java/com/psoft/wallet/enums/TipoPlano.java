@@ -1,4 +1,4 @@
-package com.psoft.wallet.model;
+package com.psoft.wallet.enums;
 
 public enum TipoPlano {
     NORMAL,

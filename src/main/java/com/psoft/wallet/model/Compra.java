@@ -1,20 +1,20 @@
 package com.psoft.wallet.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.psoft.wallet.enums.TipoInteresse;
+import com.psoft.wallet.enums.EstadoCompra;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class Interesse {
+public class Compra {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -27,7 +27,19 @@ public class Interesse {
     @JoinColumn(name = "ativo_id", nullable = false)
     private Ativo ativo;
 
+    @Column(nullable = false)
+    private Integer quantidade;
+
+    @Column(nullable = false, precision = 19, scale = 4)
+    private BigDecimal valorUnitarioNaCompra;
+
+    @Column(nullable = false, precision = 19, scale = 4)
+    private BigDecimal valorTotal;
+
+    @Column(nullable = false)
+    private LocalDateTime dataSolicitacao;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TipoInteresse tipo;
+    private EstadoCompra estado;
 }

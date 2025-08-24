@@ -1,6 +1,15 @@
 package com.psoft.wallet.service;
 
-import com.psoft.wallet.model.*;
+import com.psoft.wallet.dto.InteresseDTO;
+import com.psoft.wallet.enums.TipoInteresse;
+import com.psoft.wallet.enums.TipoPlano;
+import com.psoft.wallet.exception.AtivoNaoEncontradoException;
+import com.psoft.wallet.exception.ClienteNaoEncontradoException;
+import com.psoft.wallet.exception.OperacaoNaoAutorizadaException;
+import com.psoft.wallet.exception.RegraDeNegocioException;
+import com.psoft.wallet.model.Ativo;
+import com.psoft.wallet.model.Cliente;
+import com.psoft.wallet.model.Interesse;
 import com.psoft.wallet.repository.AtivoRepository;
 import com.psoft.wallet.repository.ClienteRepository;
 import com.psoft.wallet.repository.InteresseRepository;
@@ -10,61 +19,60 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class InteresseService {
 
-    private final InteresseRepository interesseRepository;
     private final ClienteRepository clienteRepository;
     private final AtivoRepository ativoRepository;
-    private final ClienteService clienteService;
+    private final InteresseRepository interesseRepository;
 
-    public InteresseService(InteresseRepository interesseRepository,
-                            ClienteRepository clienteRepository,
-                            AtivoRepository ativoRepository,
-                            ClienteService clienteService) {
-        this.interesseRepository = interesseRepository;
+    public InteresseService(ClienteRepository clienteRepository, AtivoRepository ativoRepository, InteresseRepository interesseRepository) {
         this.clienteRepository = clienteRepository;
         this.ativoRepository = ativoRepository;
-        this.clienteService = clienteService;
+        this.interesseRepository = interesseRepository;
     }
 
-    /**
-     * US06 & US07: Permite que um cliente marque interesse em um ativo.
-     * - Se o ativo estiver disponível, cria um interesse em VARIAÇÃO DE PREÇO (US06).
-     * - Se o ativo estiver indisponível, cria um interesse em DISPONIBILIDADE (US07).
-     */
     @Transactional
-    public Interesse marcarInteresse(Long ativoId, String codigoAcesso) {
-        // Valida o cliente
-        Cliente cliente = clienteService.validarAcesso(codigoAcesso);
-        
-        // Valida o ativo
-        Ativo ativo = ativoRepository.findById(ativoId)
-                .orElseThrow(() -> new AtivoNaoEncontradoException("Ativo com ID " + ativoId + " não encontrado"));
+    public Interesse registrarInteresse(InteresseDTO interesseDTO) {
+        Cliente cliente = clienteRepository.findByCodigoAcesso(interesseDTO.getCodigoAcessoCliente())
+                .orElseThrow(() -> new ClienteNaoEncontradoException("Cliente não encontrado."));
 
-        if (ativo.isDisponivel()) {
-            // Lógica para US06: Interesse em variação de preço
+        Ativo ativo = ativoRepository.findById(interesseDTO.getAtivoId())
+                .orElseThrow(() -> new AtivoNaoEncontradoException("Ativo não encontrado."));
+
+        // US06: Interesse em variação de preço é apenas para clientes Premium e ativos disponíveis
+        if (interesseDTO.getTipoInteresse() == TipoInteresse.VARIACAO_PRECO) {
             if (cliente.getPlano() != TipoPlano.PREMIUM) {
-                throw new OperacaoNaoAutorizadaException("Funcionalidade disponível apenas para clientes Premium.");
+                throw new OperacaoNaoAutorizadaException("Apenas clientes Premium podem registrar interesse na variação de preço.");
             }
-            if (ativo.getTipo() == TipoAtivo.TESOURO_DIRETO) {
-                throw new RegraDeNegocioException("Interesse por variação de preço só pode ser marcado para Ações ou Criptomoedas.");
+            if (!ativo.isDisponivel()) {
+                throw new RegraDeNegocioException("Não é possível registrar interesse na variação de preço de um ativo indisponível.");
             }
-            interesseRepository.findByClienteAndAtivo(cliente, ativo).ifPresent(i -> {
-                throw new RecursoDuplicadoException("Cliente já possui interesse neste ativo.");
-            });
-            return interesseRepository.save(Interesse.builder()
-                    .cliente(cliente)
-                    .ativo(ativo)
-                    .precoNoRegistro(ativo.getValorAtual())
-                    .build());
-        } else {
-            // Lógica para US07: Interesse em disponibilidade
-            interesseRepository.findByClienteAndAtivo(cliente, ativo).ifPresent(i -> {
-                throw new RecursoDuplicadoException("Cliente já possui interesse neste ativo.");
-            });
-            return interesseRepository.save(Interesse.builder()
-                    .cliente(cliente)
-                    .ativo(ativo)
-                    .precoNoRegistro(null) // Nulo indica interesse em disponibilidade
-                    .build());
         }
+
+        // US07: Interesse em disponibilidade é apenas para ativos indisponíveis
+        if (interesseDTO.getTipoInteresse() == TipoInteresse.DISPONIBILIDADE && ativo.isDisponivel()) {
+            throw new RegraDeNegocioException("Só é possível registrar interesse em disponibilidade para ativos que estão indisponíveis.");
+        }
+
+        // Evitar duplicados
+        interesseRepository.findByClienteAndAtivoAndTipo(cliente, ativo, interesseDTO.getTipoInteresse())
+                .ifPresent(i -> {
+                    throw new RegraDeNegocioException("Interesse já registrado para este cliente e ativo.");
+                });
+
+        Interesse novoInteresse = new Interesse(null, cliente, ativo, interesseDTO.getTipoInteresse());
+        return interesseRepository.save(novoInteresse);
+    }
+
+    @Transactional
+    public void removerInteresse(InteresseDTO interesseDTO) {
+        Cliente cliente = clienteRepository.findByCodigoAcesso(interesseDTO.getCodigoAcessoCliente())
+                .orElseThrow(() -> new ClienteNaoEncontradoException("Cliente não encontrado."));
+
+        Ativo ativo = ativoRepository.findById(interesseDTO.getAtivoId())
+                .orElseThrow(() -> new AtivoNaoEncontradoException("Ativo não encontrado."));
+
+        Interesse interesse = interesseRepository.findByClienteAndAtivoAndTipo(cliente, ativo, interesseDTO.getTipoInteresse())
+                .orElseThrow(() -> new RegraDeNegocioException("Nenhum interesse encontrado para remover."));
+
+        interesseRepository.delete(interesse);
     }
 }

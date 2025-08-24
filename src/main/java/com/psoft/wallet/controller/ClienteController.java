@@ -18,7 +18,6 @@ public class ClienteController {
     @PostMapping
     public Cliente criarCliente(@RequestBody Cliente cliente) {
         Cliente clienteSalvo = service.criarCliente(cliente);
-        // Não retornar código de acesso
         clienteSalvo.setCodigoAcesso(null);
         return clienteSalvo;
     }
