@@ -2,7 +2,7 @@ package com.psoft.wallet.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.psoft.wallet.model.Cliente;
-import com.psoft.wallet.model.TipoPlano;
+import com.psoft.wallet.enums.TipoPlano;
 import com.psoft.wallet.repository.ClienteRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;

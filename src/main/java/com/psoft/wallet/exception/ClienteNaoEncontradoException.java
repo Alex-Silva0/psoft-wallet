@@ -1,11 +1,11 @@
-package com.psoft.wallet.service;
+package com.psoft.wallet.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ResponseStatus(HttpStatus.NOT_FOUND)
-public class AtivoNaoEncontradoException extends RuntimeException {
-    public AtivoNaoEncontradoException(String message) {
+public class ClienteNaoEncontradoException extends RuntimeException {
+    public ClienteNaoEncontradoException(String message) {
         super(message);
     }
 } 
