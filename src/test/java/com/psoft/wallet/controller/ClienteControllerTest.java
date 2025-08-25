@@ -477,43 +477,6 @@ class ClienteControllerTest {
     }
 
     @Test
-    void testValidarAcessoComCodigoCorreto() throws Exception {
-        // Given - Criar um cliente
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("123456");
-
-        mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente))).andExpect(status().isOk());
-
-        // When & Then - Validar acesso com código correto
-        mockMvc.perform(get("/clientes/validar-acesso")
-                .param("codigoAcesso", "123456"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].nomeCompleto").value("João Silva"))
-                .andExpect(jsonPath("$[0].codigoAcesso").doesNotExist());
-    }
-
-    @Test
-    void testValidarAcessoComCodigoIncorreto() throws Exception {
-        // When & Then - Validar acesso com código incorreto
-        mockMvc.perform(get("/clientes/validar-acesso")
-                .param("codigoAcesso", "999999"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Código de acesso incorreto"));
-    }
-
-    @Test
-    void testValidarAcessoSemCodigo() throws Exception {
-        // When & Then - Validar acesso sem código
-        mockMvc.perform(get("/clientes/validar-acesso"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void testFluxoCompletoCriarEditarRemover() throws Exception {
         // Given - Criar um cliente
         Cliente cliente = new Cliente();

@@ -45,8 +45,4 @@ public class ClienteController {
         service.removerCliente(id, codigoAcesso);
     }
 
-    @GetMapping("/validar-acesso")
-    public List<Cliente> validarAcesso(@RequestParam String codigoAcesso) {
-        return service.listarAtivosPorPlano(codigoAcesso);
-    }
-} 
+}

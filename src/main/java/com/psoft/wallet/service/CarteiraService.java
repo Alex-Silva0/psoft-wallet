@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +40,7 @@ public class CarteiraService {
             BigDecimal quantidadeTotal = new BigDecimal(carteira.getQuantidade() + quantidade);
             
             // Calcula valor médio ponderado
-            BigDecimal valorMedioAquisicao = valorTotalAtual.add(valorTotalNovo).divide(quantidadeTotal, 4, BigDecimal.ROUND_HALF_UP);
+            BigDecimal valorMedioAquisicao = valorTotalAtual.add(valorTotalNovo).divide(quantidadeTotal, 4, RoundingMode.HALF_UP);
             
             carteira.setQuantidade(carteira.getQuantidade() + quantidade);
             carteira.setValorAquisicao(valorMedioAquisicao);
