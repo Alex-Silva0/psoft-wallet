@@ -52,6 +52,16 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
+    @ExceptionHandler(CompraNaoEncontradaException.class)
+    public ResponseEntity<Map<String, Object>> handleCompraNaoEncontradaException(CompraNaoEncontradaException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("status", 404);
+        errorResponse.put("error", "Not Found");
+        errorResponse.put("message", ex.getMessage());
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
     @ExceptionHandler(CodigoAcessoIncorretoException.class)
     public ResponseEntity<Object> handleCodigoAcessoIncorretoException(CodigoAcessoIncorretoException ex, WebRequest request) {
         return buildErrorResponse(ex, HttpStatus.UNAUTHORIZED);

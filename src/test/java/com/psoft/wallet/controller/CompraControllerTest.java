@@ -2,6 +2,8 @@ package com.psoft.wallet.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.psoft.wallet.dto.CompraRequestDTO;
+import com.psoft.wallet.dto.ConfirmacaoCompraDTO;
+import com.psoft.wallet.dto.ExecucaoCompraDTO;
 import com.psoft.wallet.enums.EstadoCompra;
 import com.psoft.wallet.enums.TipoAtivo;
 import com.psoft.wallet.enums.TipoPlano;
@@ -9,6 +11,7 @@ import com.psoft.wallet.model.Ativo;
 import com.psoft.wallet.model.Cliente;
 import com.psoft.wallet.model.Compra;
 import com.psoft.wallet.repository.AtivoRepository;
+import com.psoft.wallet.repository.CarteiraRepository;
 import com.psoft.wallet.repository.ClienteRepository;
 import com.psoft.wallet.repository.CompraRepository;
 import org.junit.jupiter.api.AfterEach;
@@ -27,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,6 +52,9 @@ class CompraControllerTest {
 
     @Autowired
     CompraRepository compraRepository;
+
+    @Autowired
+    CarteiraRepository carteiraRepository;
 
     Cliente cliente;
     Ativo ativo;
@@ -72,6 +79,7 @@ class CompraControllerTest {
     @AfterEach
     void tearDown() {
         compraRepository.deleteAll();
+        carteiraRepository.deleteAll();
         ativoRepository.deleteAll();
         clienteRepository.deleteAll();
     }
@@ -189,5 +197,144 @@ class CompraControllerTest {
         // When & Then
         mockMvc.perform(get("/api/compras/cliente/{codigoAcesso}", "999999"))
                 .andExpect(status().isNotFound());
+    }
+
+    // Testes para US11: Confirmar disponibilidade de compra pelo administrador
+    @Test
+    void quandoConfirmarDisponibilidadeCompra_comCompraValida_entaoRetornaCompraAtualizada() throws Exception {
+        // Given: Criar uma compra no estado SOLICITADO
+        Compra compra = new Compra();
+        compra.setCliente(cliente);
+        compra.setAtivo(ativo);
+        compra.setQuantidade(2);
+        compra.setValorTotal(new BigDecimal("200.00"));
+        compra.setValorUnitarioNaCompra(new BigDecimal("100.00"));
+        compra.setEstado(EstadoCompra.SOLICITADO);
+        compra.setDataSolicitacao(LocalDateTime.now());
+        compraRepository.save(compra);
+
+        ConfirmacaoCompraDTO confirmacaoDTO = new ConfirmacaoCompraDTO();
+        confirmacaoDTO.setCompraId(compra.getId());
+        confirmacaoDTO.setCodigoAcessoAdmin("ADMIN");
+
+        // When & Then
+        mockMvc.perform(put("/api/compras/confirmar-disponibilidade")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(confirmacaoDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("DISPONIVEL"));
+    }
+
+    @Test
+    void quandoConfirmarDisponibilidadeCompra_comCompraEmEstadoInvalido_entaoRetornaBadRequest() throws Exception {
+        // Given: Criar uma compra no estado DISPONIVEL
+        Compra compra = new Compra();
+        compra.setCliente(cliente);
+        compra.setAtivo(ativo);
+        compra.setQuantidade(2);
+        compra.setValorTotal(new BigDecimal("200.00"));
+        compra.setValorUnitarioNaCompra(new BigDecimal("100.00"));
+        compra.setEstado(EstadoCompra.DISPONIVEL);
+        compra.setDataSolicitacao(LocalDateTime.now());
+        compraRepository.save(compra);
+
+        ConfirmacaoCompraDTO confirmacaoDTO = new ConfirmacaoCompraDTO();
+        confirmacaoDTO.setCompraId(compra.getId());
+        confirmacaoDTO.setCodigoAcessoAdmin("ADMIN");
+
+        // When & Then
+        mockMvc.perform(put("/api/compras/confirmar-disponibilidade")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(confirmacaoDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("A compra deve estar no estado 'Solicitado' para ser confirmada."));
+    }
+
+    // Testes para US12: Confirmar execução de compra pelo cliente
+    @Test
+    void quandoConfirmarExecucaoCompra_comCompraDisponivel_entaoRetornaCompraFinalizada() throws Exception {
+        // Given: Criar uma compra no estado DISPONIVEL
+        Compra compra = new Compra();
+        compra.setCliente(cliente);
+        compra.setAtivo(ativo);
+        compra.setQuantidade(2);
+        compra.setValorTotal(new BigDecimal("200.00"));
+        compra.setValorUnitarioNaCompra(new BigDecimal("100.00"));
+        compra.setEstado(EstadoCompra.DISPONIVEL);
+        compra.setDataSolicitacao(LocalDateTime.now());
+        compraRepository.save(compra);
+
+        ExecucaoCompraDTO execucaoDTO = new ExecucaoCompraDTO();
+        execucaoDTO.setCompraId(compra.getId());
+        execucaoDTO.setCodigoAcessoCliente("112233");
+
+        // When & Then
+        mockMvc.perform(put("/api/compras/confirmar-execucao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(execucaoDTO)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("EM_CARTEIRA"));
+
+        // Verificar se o saldo foi debitado
+        Cliente clienteAtualizado = clienteRepository.findById(cliente.getId()).orElseThrow();
+        assertEquals(0, new BigDecimal("800.00").compareTo(clienteAtualizado.getSaldo()), "O saldo deve ter sido debitado.");
+    }
+
+    @Test
+    void quandoConfirmarExecucaoCompra_comCompraEmEstadoInvalido_entaoRetornaBadRequest() throws Exception {
+        // Given: Criar uma compra no estado SOLICITADO
+        Compra compra = new Compra();
+        compra.setCliente(cliente);
+        compra.setAtivo(ativo);
+        compra.setQuantidade(2);
+        compra.setValorTotal(new BigDecimal("200.00"));
+        compra.setValorUnitarioNaCompra(new BigDecimal("100.00"));
+        compra.setEstado(EstadoCompra.SOLICITADO);
+        compra.setDataSolicitacao(LocalDateTime.now());
+        compraRepository.save(compra);
+
+        ExecucaoCompraDTO execucaoDTO = new ExecucaoCompraDTO();
+        execucaoDTO.setCompraId(compra.getId());
+        execucaoDTO.setCodigoAcessoCliente("112233");
+
+        // When & Then
+        mockMvc.perform(put("/api/compras/confirmar-execucao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(execucaoDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("A compra deve estar no estado 'Disponível' para ser executada."));
+    }
+
+    @Test
+    void quandoConfirmarExecucaoCompra_comClienteDiferente_entaoRetornaBadRequest() throws Exception {
+        // Given: Criar outro cliente
+        Cliente outroCliente = new Cliente();
+        outroCliente.setNomeCompleto("Outro Cliente");
+        outroCliente.setPlano(TipoPlano.NORMAL);
+        outroCliente.setCodigoAcesso("445566");
+        outroCliente.setSaldo(new BigDecimal("500.00"));
+        clienteRepository.save(outroCliente);
+
+        // Criar uma compra para o cliente original
+        Compra compra = new Compra();
+        compra.setCliente(cliente);
+        compra.setAtivo(ativo);
+        compra.setQuantidade(2);
+        compra.setValorTotal(new BigDecimal("200.00"));
+        compra.setValorUnitarioNaCompra(new BigDecimal("100.00"));
+        compra.setEstado(EstadoCompra.DISPONIVEL);
+        compra.setDataSolicitacao(LocalDateTime.now());
+        compraRepository.save(compra);
+
+        ExecucaoCompraDTO execucaoDTO = new ExecucaoCompraDTO();
+        execucaoDTO.setCompraId(compra.getId());
+        execucaoDTO.setCodigoAcessoCliente("445566"); // Código do outro cliente
+
+        // When & Then
+        mockMvc.perform(put("/api/compras/confirmar-execucao")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(execucaoDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Cliente não pode confirmar compra de outro cliente."));
     }
 }
