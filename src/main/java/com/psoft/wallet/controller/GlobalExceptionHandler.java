@@ -1,12 +1,16 @@
 package com.psoft.wallet.controller;
 
+import com.psoft.wallet.exception.*;
+import com.psoft.wallet.service.DadosInvalidosException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.context.request.WebRequest;
-import com.psoft.wallet.service.*;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @ControllerAdvice
@@ -17,14 +21,44 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, status);
     }
 
-    @ExceptionHandler(RecursoDuplicadoException.class)
-    public ResponseEntity<Object> handleRecursoDuplicadoException(RecursoDuplicadoException ex, WebRequest request) {
-        return buildErrorResponse(ex, HttpStatus.CONFLICT);
+    @ExceptionHandler(AtivoNomeDuplicadoException.class)
+    public ResponseEntity<Map<String, Object>> handleAtivoNomeDuplicadoException(AtivoNomeDuplicadoException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("status", 409);
+        errorResponse.put("error", "Conflict");
+        errorResponse.put("message", ex.getMessage());
+        
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
-    @ExceptionHandler({AtivoNaoEncontradoException.class, ClienteNaoEncontradoException.class})
-    public ResponseEntity<Object> handleNotFoundException(RuntimeException ex, WebRequest request) {
-        return buildErrorResponse(ex, HttpStatus.NOT_FOUND);
+    @ExceptionHandler(ClienteNaoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> handleClienteNaoEncontradoException(ClienteNaoEncontradoException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("status", 404);
+        errorResponse.put("error", "Not Found");
+        errorResponse.put("message", ex.getMessage());
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(AtivoNaoEncontradoException.class)
+    public ResponseEntity<Map<String, Object>> handleAtivoNaoEncontradoException(AtivoNaoEncontradoException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("status", 404);
+        errorResponse.put("error", "Not Found");
+        errorResponse.put("message", ex.getMessage());
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(CompraNaoEncontradaException.class)
+    public ResponseEntity<Map<String, Object>> handleCompraNaoEncontradaException(CompraNaoEncontradaException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("status", 404);
+        errorResponse.put("error", "Not Found");
+        errorResponse.put("message", ex.getMessage());
+        
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
     @ExceptionHandler(CodigoAcessoIncorretoException.class)
@@ -33,12 +67,67 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(OperacaoNaoAutorizadaException.class)
-    public ResponseEntity<Object> handleOperacaoNaoAutorizadaException(OperacaoNaoAutorizadaException ex, WebRequest request) {
-        return buildErrorResponse(ex, HttpStatus.FORBIDDEN);
+    public ResponseEntity<Map<String, Object>> handleOperacaoNaoAutorizadaException(OperacaoNaoAutorizadaException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("status", 403);
+        errorResponse.put("error", "Forbidden");
+        errorResponse.put("message", ex.getMessage());
+        
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
-    @ExceptionHandler({DadosInvalidosException.class, RegraDeNegocioException.class, IllegalArgumentException.class})
-    public ResponseEntity<Object> handleBadRequestException(RuntimeException ex, WebRequest request) {
-        return buildErrorResponse(ex, HttpStatus.BAD_REQUEST);
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("status", 400);
+        errorResponse.put("error", "Bad Request");
+        errorResponse.put("message", ex.getMessage());
+        
+        return ResponseEntity.badRequest().body(errorResponse);
     }
-} 
+
+    @ExceptionHandler(RegraDeNegocioException.class)
+    public ResponseEntity<Map<String, Object>> handleRegraDeNegocioException(RegraDeNegocioException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("status", 400);
+        errorResponse.put("error", "Bad Request");
+        errorResponse.put("message", ex.getMessage());
+
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    @ExceptionHandler(DadosInvalidosException.class)
+    public ResponseEntity<Map<String, Object>> handleDadosInvalidosException(DadosInvalidosException ex) {
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("status", 400);
+        errorResponse.put("error", "Bad Request");
+        errorResponse.put("message", ex.getMessage());
+
+        return ResponseEntity.badRequest().body(errorResponse);
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+                .filter(error -> {
+                    String code = error.getCode();
+                    if (code == null) {
+                        return false;
+                    }
+                    return code.equals("Pattern");
+                })
+                .findFirst()
+                .map(FieldError::getDefaultMessage)
+                .orElseGet(() -> ex.getBindingResult().getFieldErrors().stream()
+                        .findFirst()
+                        .map(FieldError::getDefaultMessage)
+                        .orElse("Erros de validação encontrados."));
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("status", 400);
+        errorResponse.put("error", "Bad Request");
+        errorResponse.put("message", errorMessage);
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+}

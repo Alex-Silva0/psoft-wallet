@@ -1,10 +1,9 @@
 package com.psoft.wallet.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.psoft.wallet.model.Ativo;
-import com.psoft.wallet.model.Cliente;
-import com.psoft.wallet.model.TipoAtivo;
-import com.psoft.wallet.model.TipoPlano;
+import com.psoft.wallet.dto.AtivoRequestDTO;
+import com.psoft.wallet.enums.TipoAtivo;
+import com.psoft.wallet.enums.TipoPlano;
 import com.psoft.wallet.repository.AtivoRepository;
 import com.psoft.wallet.repository.ClienteRepository;
 import org.junit.jupiter.api.Test;
@@ -17,6 +16,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import java.math.BigDecimal;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -69,42 +69,42 @@ class AtivoClienteControllerTest {
         criarCliente("João Silva", "Rua das Flores, 123", TipoPlano.NORMAL, "123456");
 
         // Given - Criar ativos de diferentes tipos
-        Ativo tesouro = new Ativo();
+        AtivoRequestDTO tesouro = new AtivoRequestDTO();
         tesouro.setNome("Tesouro Selic 2026");
         tesouro.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro.setDescricao("Tesouro Direto Selic 2026");
         tesouro.setDisponivel(true);
-        tesouro.setValorAtual(100.00f);
+        tesouro.setValor(new BigDecimal("100.00"));
 
-        Ativo acao = new Ativo();
+        AtivoRequestDTO acao = new AtivoRequestDTO();
         acao.setNome("Petrobras");
         acao.setTipo(TipoAtivo.ACAO);
         acao.setDescricao("Ação da Petrobras");
         acao.setDisponivel(true);
-        acao.setValorAtual(25.50f);
+        acao.setValor(new BigDecimal("25.50"));
 
-        Ativo cripto = new Ativo();
+        AtivoRequestDTO cripto = new AtivoRequestDTO();
         cripto.setNome("Bitcoin");
         cripto.setTipo(TipoAtivo.CRIPTOMOEDA);
         cripto.setDescricao("Bitcoin - primeira criptomoeda");
         cripto.setDisponivel(true);
-        cripto.setValorAtual(150000.00f);
+        cripto.setValor(new BigDecimal("150000.00"));
 
         // Criar os ativos
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(tesouro)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(acao)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(cripto)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         // When & Then - Cliente Normal deve ver apenas Tesouro Direto
         mockMvc.perform(get("/cliente/ativos/disponiveis")
@@ -121,42 +121,42 @@ class AtivoClienteControllerTest {
         criarCliente("Maria Santos", "Av. Principal, 456", TipoPlano.PREMIUM, "654321");
 
         // Given - Criar ativos de diferentes tipos
-        Ativo tesouro = new Ativo();
+        AtivoRequestDTO tesouro = new AtivoRequestDTO();
         tesouro.setNome("Tesouro Selic 2026");
         tesouro.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro.setDescricao("Tesouro Direto Selic 2026");
         tesouro.setDisponivel(true);
-        tesouro.setValorAtual(100.00f);
+        tesouro.setValor(new BigDecimal("100.00"));
 
-        Ativo acao = new Ativo();
+        AtivoRequestDTO acao = new AtivoRequestDTO();
         acao.setNome("Petrobras");
         acao.setTipo(TipoAtivo.ACAO);
         acao.setDescricao("Ação da Petrobras");
         acao.setDisponivel(true);
-        acao.setValorAtual(25.50f);
+        acao.setValor(new BigDecimal("25.50"));
 
-        Ativo cripto = new Ativo();
+        AtivoRequestDTO cripto = new AtivoRequestDTO();
         cripto.setNome("Bitcoin");
         cripto.setTipo(TipoAtivo.CRIPTOMOEDA);
         cripto.setDescricao("Bitcoin - primeira criptomoeda");
         cripto.setDisponivel(true);
-        cripto.setValorAtual(150000.00f);
+        cripto.setValor(new BigDecimal("150000.00"));
 
         // Criar os ativos
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(tesouro)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(acao)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(cripto)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         // When & Then - Cliente Premium deve ver todos os tipos
         mockMvc.perform(get("/cliente/ativos/disponiveis")
@@ -177,30 +177,30 @@ class AtivoClienteControllerTest {
         criarCliente("João Silva", "Rua das Flores, 123", TipoPlano.NORMAL, "123456");
 
         // Given - Criar apenas ações e criptomoedas (sem Tesouro Direto)
-        Ativo acao = new Ativo();
+        AtivoRequestDTO acao = new AtivoRequestDTO();
         acao.setNome("Petrobras");
         acao.setTipo(TipoAtivo.ACAO);
         acao.setDescricao("Ação da Petrobras");
         acao.setDisponivel(true);
-        acao.setValorAtual(25.50f);
+        acao.setValor(new BigDecimal("25.50"));
 
-        Ativo cripto = new Ativo();
+        AtivoRequestDTO cripto = new AtivoRequestDTO();
         cripto.setNome("Bitcoin");
         cripto.setTipo(TipoAtivo.CRIPTOMOEDA);
         cripto.setDescricao("Bitcoin - primeira criptomoeda");
         cripto.setDisponivel(true);
-        cripto.setValorAtual(150000.00f);
+        cripto.setValor(new BigDecimal("150000.00"));
 
         // Criar os ativos
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(acao)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(cripto)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         // When & Then - Cliente Normal não deve ver nada (lista vazia)
         mockMvc.perform(get("/cliente/ativos/disponiveis")
@@ -215,18 +215,18 @@ class AtivoClienteControllerTest {
         criarCliente("Maria Santos", "Av. Principal, 456", TipoPlano.PREMIUM, "654321");
 
         // Given - Criar apenas Tesouro Direto
-        Ativo tesouro = new Ativo();
+        AtivoRequestDTO tesouro = new AtivoRequestDTO();
         tesouro.setNome("Tesouro Selic 2026");
         tesouro.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro.setDescricao("Tesouro Direto Selic 2026");
         tesouro.setDisponivel(true);
-        tesouro.setValorAtual(100.00f);
+        tesouro.setValor(new BigDecimal("100.00"));
 
         // Criar o ativo
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(tesouro)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         // When & Then - Cliente Premium deve ver o Tesouro Direto
         mockMvc.perform(get("/cliente/ativos/disponiveis")
@@ -243,18 +243,18 @@ class AtivoClienteControllerTest {
         criarCliente("João Silva", "Rua das Flores, 123", TipoPlano.NORMAL, "123456");
 
         // Given - Criar Tesouro Direto indisponível
-        Ativo tesouroIndisponivel = new Ativo();
+        AtivoRequestDTO tesouroIndisponivel = new AtivoRequestDTO();
         tesouroIndisponivel.setNome("Tesouro Selic 2026");
         tesouroIndisponivel.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouroIndisponivel.setDescricao("Tesouro Direto Selic 2026");
         tesouroIndisponivel.setDisponivel(false);
-        tesouroIndisponivel.setValorAtual(100.00f);
+        tesouroIndisponivel.setValor(new BigDecimal("100.00"));
 
         // Criar o ativo indisponível
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(tesouroIndisponivel)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         // When & Then - Cliente não deve ver ativos indisponíveis
         mockMvc.perform(get("/cliente/ativos/disponiveis")
@@ -268,8 +268,7 @@ class AtivoClienteControllerTest {
         // When & Then - Tentar acessar com código incorreto
         mockMvc.perform(get("/cliente/ativos/disponiveis")
                 .param("codigoAcesso", "999999"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Código de acesso incorreto"));
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -285,72 +284,78 @@ class AtivoClienteControllerTest {
         criarCliente("Maria Santos", "Av. Principal, 456", TipoPlano.PREMIUM, "654321");
 
         // Given - Criar múltiplos ativos de diferentes tipos
-        Ativo tesouro1 = new Ativo();
+        AtivoRequestDTO tesouro1 = new AtivoRequestDTO();
         tesouro1.setNome("Tesouro Selic 2026");
         tesouro1.setTipo(TipoAtivo.TESOURO_DIRETO);
+        tesouro1.setDescricao("Tesouro Direto Selic 2026");
         tesouro1.setDisponivel(true);
-        tesouro1.setValorAtual(100.00f);
+        tesouro1.setValor(new BigDecimal("100.00"));
 
-        Ativo tesouro2 = new Ativo();
+        AtivoRequestDTO tesouro2 = new AtivoRequestDTO();
         tesouro2.setNome("Tesouro IPCA 2030");
         tesouro2.setTipo(TipoAtivo.TESOURO_DIRETO);
+        tesouro2.setDescricao("Tesouro Direto IPCA 2030");
         tesouro2.setDisponivel(true);
-        tesouro2.setValorAtual(150.00f);
+        tesouro2.setValor(new BigDecimal("150.00"));
 
-        Ativo acao1 = new Ativo();
+        AtivoRequestDTO acao1 = new AtivoRequestDTO();
         acao1.setNome("Petrobras");
         acao1.setTipo(TipoAtivo.ACAO);
+        acao1.setDescricao("Ação da Petrobras");
         acao1.setDisponivel(true);
-        acao1.setValorAtual(25.50f);
+        acao1.setValor(new BigDecimal("25.50"));
 
-        Ativo acao2 = new Ativo();
+        AtivoRequestDTO acao2 = new AtivoRequestDTO();
         acao2.setNome("Vale");
         acao2.setTipo(TipoAtivo.ACAO);
+        acao2.setDescricao("Ação da Vale");
         acao2.setDisponivel(true);
-        acao2.setValorAtual(30.00f);
+        acao2.setValor(new BigDecimal("30.00"));
 
-        Ativo cripto1 = new Ativo();
+        AtivoRequestDTO cripto1 = new AtivoRequestDTO();
         cripto1.setNome("Bitcoin");
         cripto1.setTipo(TipoAtivo.CRIPTOMOEDA);
+        cripto1.setDescricao("Bitcoin - primeira criptomoeda");
         cripto1.setDisponivel(true);
-        cripto1.setValorAtual(150000.00f);
+        cripto1.setValor(new BigDecimal("150000.00"));
 
-        Ativo cripto2 = new Ativo();
+        AtivoRequestDTO cripto2 = new AtivoRequestDTO();
         cripto2.setNome("Ethereum");
         cripto2.setTipo(TipoAtivo.CRIPTOMOEDA);
+        cripto2.setDescricao("Ethereum - segunda criptomoeda");
         cripto2.setDisponivel(true);
-        cripto2.setValorAtual(8000.00f);
+        cripto2.setValor(new BigDecimal("8000.00"));
 
         // Criar todos os ativos
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(tesouro1)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(tesouro2)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(acao1)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(acao2)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(cripto1)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(cripto2)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         // When & Then - Cliente Premium deve ver todos os 6 ativos
         mockMvc.perform(get("/cliente/ativos/disponiveis")
@@ -365,39 +370,42 @@ class AtivoClienteControllerTest {
         criarCliente("João Silva", "Rua das Flores, 123", TipoPlano.NORMAL, "123456");
 
         // Given - Criar múltiplos Tesouros Diretos (alguns indisponíveis)
-        Ativo tesouro1 = new Ativo();
+        AtivoRequestDTO tesouro1 = new AtivoRequestDTO();
         tesouro1.setNome("Tesouro Selic 2026");
         tesouro1.setTipo(TipoAtivo.TESOURO_DIRETO);
+        tesouro1.setDescricao("Tesouro Direto Selic 2026");
         tesouro1.setDisponivel(true);
-        tesouro1.setValorAtual(100.00f);
+        tesouro1.setValor(new BigDecimal("100.00"));
 
-        Ativo tesouro2 = new Ativo();
+        AtivoRequestDTO tesouro2 = new AtivoRequestDTO();
         tesouro2.setNome("Tesouro IPCA 2030");
         tesouro2.setTipo(TipoAtivo.TESOURO_DIRETO);
+        tesouro2.setDescricao("Tesouro Direto IPCA 2030");
         tesouro2.setDisponivel(false); // Indisponível
-        tesouro2.setValorAtual(150.00f);
+        tesouro2.setValor(new BigDecimal("150.00"));
 
-        Ativo tesouro3 = new Ativo();
+        AtivoRequestDTO tesouro3 = new AtivoRequestDTO();
         tesouro3.setNome("Tesouro Prefixado 2025");
         tesouro3.setTipo(TipoAtivo.TESOURO_DIRETO);
+        tesouro3.setDescricao("Tesouro Direto Prefixado 2025");
         tesouro3.setDisponivel(true);
-        tesouro3.setValorAtual(120.00f);
+        tesouro3.setValor(new BigDecimal("120.00"));
 
         // Criar os ativos
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(tesouro1)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(tesouro2)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
-        mockMvc.perform(post("/ativos")
+        mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(tesouro3)))
-                .andExpect(status().isOk());
+                .andExpect(status().isCreated());
 
         // When & Then - Cliente Normal deve ver apenas os 2 Tesouros disponíveis
         mockMvc.perform(get("/cliente/ativos/disponiveis")

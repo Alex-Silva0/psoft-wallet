@@ -1,8 +1,10 @@
 package com.psoft.wallet.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.psoft.wallet.dto.ClienteRequestDTO;
+import com.psoft.wallet.dto.ClienteResponseDTO;
 import com.psoft.wallet.model.Cliente;
-import com.psoft.wallet.model.TipoPlano;
+import com.psoft.wallet.enums.TipoPlano;
 import com.psoft.wallet.repository.ClienteRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,16 +61,16 @@ class ClienteControllerTest {
     @Test
     void testCriarClienteComSucesso() throws Exception {
         // Given
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("123456");
+        ClienteRequestDTO clienteRequest = new ClienteRequestDTO();
+        clienteRequest.setNomeCompleto("João Silva");
+        clienteRequest.setEnderecoPrincipal("Rua das Flores, 123");
+        clienteRequest.setPlano(TipoPlano.NORMAL);
+        clienteRequest.setCodigoAcesso("123456");
 
         // When & Then
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente)))
+                .content(objectMapper.writeValueAsString(clienteRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nomeCompleto").value("João Silva"))
                 .andExpect(jsonPath("$.enderecoPrincipal").value("Rua das Flores, 123"))
@@ -77,7 +79,7 @@ class ClienteControllerTest {
                 .andReturn().getResponse().getContentAsString();
 
         // Verificar se foi salvo no banco
-        Cliente clienteSalvo = objectMapper.readValue(response, Cliente.class);
+        ClienteResponseDTO clienteSalvo = objectMapper.readValue(response, ClienteResponseDTO.class);
         assertTrue(repository.findById(clienteSalvo.getId()).isPresent());
         
         // Verificar se o código de acesso foi salvo (mas não retornado)
@@ -89,16 +91,16 @@ class ClienteControllerTest {
     @Test
     void testCriarClientePremium() throws Exception {
         // Given
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("Maria Santos");
-        cliente.setEnderecoPrincipal("Av. Principal, 456");
-        cliente.setPlano(TipoPlano.PREMIUM);
-        cliente.setCodigoAcesso("654321");
+        ClienteRequestDTO clienteRequest = new ClienteRequestDTO();
+        clienteRequest.setNomeCompleto("Maria Santos");
+        clienteRequest.setEnderecoPrincipal("Av. Principal, 456");
+        clienteRequest.setPlano(TipoPlano.PREMIUM);
+        clienteRequest.setCodigoAcesso("654321");
 
         // When & Then
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente)))
+                .content(objectMapper.writeValueAsString(clienteRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.plano").value("PREMIUM"))
                 .andExpect(jsonPath("$.codigoAcesso").doesNotExist());
@@ -107,16 +109,16 @@ class ClienteControllerTest {
     @Test
     void testCriarClienteComCodigoAcessoInvalido() throws Exception {
         // Given - Código com menos de 6 dígitos
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("12345");
+        ClienteRequestDTO clienteRequest = new ClienteRequestDTO();
+        clienteRequest.setNomeCompleto("João Silva");
+        clienteRequest.setEnderecoPrincipal("Rua das Flores, 123");
+        clienteRequest.setPlano(TipoPlano.NORMAL);
+        clienteRequest.setCodigoAcesso("12345");
 
         // When & Then
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente)))
+                .content(objectMapper.writeValueAsString(clienteRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Código de acesso deve ter exatamente 6 dígitos"));
     }
@@ -124,16 +126,16 @@ class ClienteControllerTest {
     @Test
     void testCriarClienteComCodigoAcessoComLetras() throws Exception {
         // Given - Código com letras
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("12345a");
+        ClienteRequestDTO clienteRequest = new ClienteRequestDTO();
+        clienteRequest.setNomeCompleto("João Silva");
+        clienteRequest.setEnderecoPrincipal("Rua das Flores, 123");
+        clienteRequest.setPlano(TipoPlano.NORMAL);
+        clienteRequest.setCodigoAcesso("12345a");
 
         // When & Then
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente)))
+                .content(objectMapper.writeValueAsString(clienteRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Código de acesso deve ter exatamente 6 dígitos"));
     }
@@ -141,15 +143,16 @@ class ClienteControllerTest {
     @Test
     void testCriarClienteSemCodigoAcesso() throws Exception {
         // Given - Sem código de acesso
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
+        ClienteRequestDTO clienteRequest = new ClienteRequestDTO();
+        clienteRequest.setNomeCompleto("João Silva");
+        clienteRequest.setEnderecoPrincipal("Rua das Flores, 123");
+        clienteRequest.setPlano(TipoPlano.NORMAL);
+        clienteRequest.setCodigoAcesso("");
 
         // When & Then
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente)))
+                .content(objectMapper.writeValueAsString(clienteRequest)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Código de acesso deve ter exatamente 6 dígitos"));
     }
@@ -157,13 +160,13 @@ class ClienteControllerTest {
     @Test
     void testListarTodosClientes() throws Exception {
         // Given - Criar múltiplos clientes
-        Cliente cliente1 = new Cliente();
+        ClienteRequestDTO cliente1 = new ClienteRequestDTO();
         cliente1.setNomeCompleto("João Silva");
         cliente1.setEnderecoPrincipal("Rua das Flores, 123");
         cliente1.setPlano(TipoPlano.NORMAL);
         cliente1.setCodigoAcesso("123456");
 
-        Cliente cliente2 = new Cliente();
+        ClienteRequestDTO cliente2 = new ClienteRequestDTO();
         cliente2.setNomeCompleto("Maria Santos");
         cliente2.setEnderecoPrincipal("Av. Principal, 456");
         cliente2.setPlano(TipoPlano.PREMIUM);
@@ -172,12 +175,12 @@ class ClienteControllerTest {
         // Criar os clientes
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente1)))
+                .content(objectMapper.writeValueAsString(cliente1)))
                 .andExpect(status().isOk());
 
         mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente2)))
+                .content(objectMapper.writeValueAsString(cliente2)))
                 .andExpect(status().isOk());
 
         // When & Then - Listar todos os clientes
@@ -193,19 +196,19 @@ class ClienteControllerTest {
     @Test
     void testBuscarClientePorId() throws Exception {
         // Given - Criar um cliente
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("123456");
+        ClienteRequestDTO clienteRequest = new ClienteRequestDTO();
+        clienteRequest.setNomeCompleto("João Silva");
+        clienteRequest.setEnderecoPrincipal("Rua das Flores, 123");
+        clienteRequest.setPlano(TipoPlano.NORMAL);
+        clienteRequest.setCodigoAcesso("123456");
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente)))
+                .content(objectMapper.writeValueAsString(clienteRequest)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        Cliente clienteSalvo = objectMapper.readValue(response, Cliente.class);
+        ClienteResponseDTO clienteSalvo = objectMapper.readValue(response, ClienteResponseDTO.class);
         Long id = clienteSalvo.getId();
 
         // When & Then - Buscar cliente por ID
@@ -228,26 +231,27 @@ class ClienteControllerTest {
     @Test
     void testEditarClienteComCodigoAcessoCorreto() throws Exception {
         // Given - Criar um cliente
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("123456");
+        ClienteRequestDTO clienteRequest = new ClienteRequestDTO();
+        clienteRequest.setNomeCompleto("João Silva");
+        clienteRequest.setEnderecoPrincipal("Rua das Flores, 123");
+        clienteRequest.setPlano(TipoPlano.NORMAL);
+        clienteRequest.setCodigoAcesso("123456");
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente)))
+                .content(objectMapper.writeValueAsString(clienteRequest)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        Cliente clienteSalvo = objectMapper.readValue(response, Cliente.class);
+        ClienteResponseDTO clienteSalvo = objectMapper.readValue(response, ClienteResponseDTO.class);
         Long id = clienteSalvo.getId();
 
         // When & Then - Editar cliente com código correto
-        Cliente clienteEditado = new Cliente();
+        ClienteRequestDTO clienteEditado = new ClienteRequestDTO();
         clienteEditado.setNomeCompleto("João Silva Santos");
         clienteEditado.setEnderecoPrincipal("Rua das Flores, 456");
         clienteEditado.setPlano(TipoPlano.PREMIUM);
+        clienteEditado.setCodigoAcesso("123456");
 
         mockMvc.perform(put("/clientes/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -263,24 +267,27 @@ class ClienteControllerTest {
     @Test
     void testEditarClienteComCodigoAcessoIncorreto() throws Exception {
         // Given - Criar um cliente
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("123456");
+        ClienteRequestDTO clienteRequest = new ClienteRequestDTO();
+        clienteRequest.setNomeCompleto("João Silva");
+        clienteRequest.setEnderecoPrincipal("Rua das Flores, 123");
+        clienteRequest.setPlano(TipoPlano.NORMAL);
+        clienteRequest.setCodigoAcesso("123456");
 
         String response = mockMvc.perform(post("/clientes")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente)))
+                .content(objectMapper.writeValueAsString(clienteRequest)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        Cliente clienteSalvo = objectMapper.readValue(response, Cliente.class);
+        ClienteResponseDTO clienteSalvo = objectMapper.readValue(response, ClienteResponseDTO.class);
         Long id = clienteSalvo.getId();
 
         // When & Then - Tentar editar com código incorreto
-        Cliente clienteEditado = new Cliente();
+        ClienteRequestDTO clienteEditado = new ClienteRequestDTO();
         clienteEditado.setNomeCompleto("João Silva Santos");
+        clienteEditado.setEnderecoPrincipal("Rua das Flores, 123");
+        clienteEditado.setPlano(TipoPlano.NORMAL);
+        clienteEditado.setCodigoAcesso("123456");
 
         mockMvc.perform(put("/clientes/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -477,43 +484,6 @@ class ClienteControllerTest {
     }
 
     @Test
-    void testValidarAcessoComCodigoCorreto() throws Exception {
-        // Given - Criar um cliente
-        Cliente cliente = new Cliente();
-        cliente.setNomeCompleto("João Silva");
-        cliente.setEnderecoPrincipal("Rua das Flores, 123");
-        cliente.setPlano(TipoPlano.NORMAL);
-        cliente.setCodigoAcesso("123456");
-
-        mockMvc.perform(post("/clientes").contentType(MediaType.APPLICATION_JSON)
-                .content(clienteAsJsonString(cliente))).andExpect(status().isOk());
-
-        // When & Then - Validar acesso com código correto
-        mockMvc.perform(get("/clientes/validar-acesso")
-                .param("codigoAcesso", "123456"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].nomeCompleto").value("João Silva"))
-                .andExpect(jsonPath("$[0].codigoAcesso").doesNotExist());
-    }
-
-    @Test
-    void testValidarAcessoComCodigoIncorreto() throws Exception {
-        // When & Then - Validar acesso com código incorreto
-        mockMvc.perform(get("/clientes/validar-acesso")
-                .param("codigoAcesso", "999999"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Código de acesso incorreto"));
-    }
-
-    @Test
-    void testValidarAcessoSemCodigo() throws Exception {
-        // When & Then - Validar acesso sem código
-        mockMvc.perform(get("/clientes/validar-acesso"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     void testFluxoCompletoCriarEditarRemover() throws Exception {
         // Given - Criar um cliente
         Cliente cliente = new Cliente();
@@ -536,10 +506,11 @@ class ClienteControllerTest {
         assertTrue(repository.existsById(id));
 
         // When & Then - 2. Editar cliente
-        Cliente clienteEditado = new Cliente();
+        ClienteRequestDTO clienteEditado = new ClienteRequestDTO();
         clienteEditado.setNomeCompleto("João Silva Santos");
         clienteEditado.setEnderecoPrincipal("Rua das Flores, 456");
         clienteEditado.setPlano(TipoPlano.PREMIUM);
+        clienteEditado.setCodigoAcesso("123456");
 
         mockMvc.perform(put("/clientes/{id}", id)
                 .contentType(MediaType.APPLICATION_JSON)

@@ -1,8 +1,10 @@
 package com.psoft.wallet.controller;
 
+import com.psoft.wallet.dto.AtivoResponseDTO;
+import com.psoft.wallet.enums.TipoPlano;
 import org.springframework.web.bind.annotation.*;
 import com.psoft.wallet.model.Ativo;
-import com.psoft.wallet.model.TipoAtivo;
+import com.psoft.wallet.enums.TipoAtivo;
 import com.psoft.wallet.service.AtivoService;
 import com.psoft.wallet.service.ClienteService;
 import com.psoft.wallet.model.Cliente;
@@ -22,25 +24,33 @@ public class AtivoClienteController {
     }
 
     @GetMapping("/disponiveis")
-    public List<Ativo> listarAtivosDisponiveisParaPlano(@RequestParam String codigoAcesso) {
-        // 1. Valida o código de acesso e obtém o cliente.
-        //    O método no service deve lançar uma exceção apropriada (que resulta em 401/404)
-        //    se o código for inválido, o que está alinhado com os testes.
-        //    O nome do método foi alterado para maior clareza.
-        Cliente cliente = clienteService.validarAcesso(codigoAcesso);
+    public List<AtivoResponseDTO> listarAtivosDisponiveisParaPlano(@RequestParam String codigoAcesso) {
+        Cliente cliente = clienteService.buscarClientePorCodigoAcesso(codigoAcesso);
 
-        // 2. Obter todos os ativos disponíveis do sistema.
         List<Ativo> todosAtivos = ativoService.listarAtivosDisponiveis();
 
-        // 3. Filtra a lista de ativos com base no plano do cliente (US05).
-        if (cliente.getPlano() == com.psoft.wallet.model.TipoPlano.NORMAL) {
-            // Clientes do plano Normal visualizam apenas Tesouro Direto.
-            return todosAtivos.stream()
+        List<Ativo> ativosFiltrados;
+        if (cliente.getPlano() == TipoPlano.NORMAL) {
+            ativosFiltrados = todosAtivos.stream()
                 .filter(ativo -> ativo.getTipo() == TipoAtivo.TESOURO_DIRETO)
                 .collect(Collectors.toList());
         } else {
-            // Clientes do plano Premium visualizam todos os tipos de ativos.
-            return todosAtivos;
+            ativosFiltrados = todosAtivos;
         }
+
+        return ativosFiltrados.stream()
+            .map(this::convertToResponseDTO)
+            .collect(Collectors.toList());
     }
-} 
+
+    private AtivoResponseDTO convertToResponseDTO(Ativo ativo) {
+        return new AtivoResponseDTO(
+            ativo.getId(),
+            ativo.getNome(),
+            ativo.getTipo(),
+            ativo.getDescricao(),
+            ativo.isDisponivel(),
+            ativo.getValorAtual()
+        );
+    }
+}
