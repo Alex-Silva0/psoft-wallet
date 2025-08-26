@@ -1,6 +1,8 @@
 package com.psoft.wallet.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.psoft.wallet.dto.AtivoRequestDTO;
+import com.psoft.wallet.dto.AtivoResponseDTO;
 import com.psoft.wallet.model.Ativo;
 import com.psoft.wallet.dto.InteresseDTO;
 import com.psoft.wallet.enums.TipoAtivo;
@@ -86,17 +88,17 @@ class AtivoControllerTest {
     @Test
     void testCriarAtivoComSucesso() throws Exception {
         // Given
-        Ativo ativo = new Ativo();
-        ativo.setNome("Petrobras");
-        ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setDescricao("Ação da Petrobras");
-        ativo.setDisponivel(true);
-        ativo.setValorAtual(new BigDecimal("25.50"));
+        AtivoRequestDTO ativoRequest = new AtivoRequestDTO();
+        ativoRequest.setNome("Petrobras");
+        ativoRequest.setTipo(TipoAtivo.ACAO);
+        ativoRequest.setDescricao("Ação da Petrobras");
+        ativoRequest.setDisponivel(true);
+        ativoRequest.setValor(new BigDecimal("25.50"));
 
         // When & Then
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(ativo)))
+                .content(objectMapper.writeValueAsString(ativoRequest)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.nome").value("Petrobras"))
                 .andExpect(jsonPath("$.tipo").value("ACAO"))
@@ -106,19 +108,19 @@ class AtivoControllerTest {
                 .andReturn().getResponse().getContentAsString();
 
         // Verificar se foi salvo no banco
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         assertTrue(repository.findById(ativoSalvo.getId()).isPresent());
     }
 
     @Test
     void testCriarAtivoTesouroDireto() throws Exception {
         // Given
-        Ativo tesouro = new Ativo();
+        AtivoRequestDTO tesouro = new AtivoRequestDTO();
         tesouro.setNome("Tesouro Selic 2026");
         tesouro.setTipo(TipoAtivo.TESOURO_DIRETO);
         tesouro.setDescricao("Tesouro Direto Selic 2026");
         tesouro.setDisponivel(true);
-        tesouro.setValorAtual(new BigDecimal("100.00"));
+        tesouro.setValor(new BigDecimal("100.00"));
 
         // When & Then
         mockMvc.perform(post("/api/ativos")
@@ -132,12 +134,12 @@ class AtivoControllerTest {
     @Test
     void testCriarAtivoCriptomoeda() throws Exception {
         // Given
-        Ativo cripto = new Ativo();
+        AtivoRequestDTO cripto = new AtivoRequestDTO();
         cripto.setNome("Bitcoin");
         cripto.setTipo(TipoAtivo.CRIPTOMOEDA);
         cripto.setDescricao("Bitcoin - primeira criptomoeda");
         cripto.setDisponivel(true);
-        cripto.setValorAtual(new BigDecimal("150000.00"));
+        cripto.setValor(new BigDecimal("150000.00"));
 
         // When & Then
         mockMvc.perform(post("/api/ativos")
@@ -151,10 +153,12 @@ class AtivoControllerTest {
     @Test
     void testCriarAtivoComNomeDuplicado() throws Exception {
         // Given - Criar primeiro ativo
-        Ativo ativo1 = new Ativo();
+        AtivoRequestDTO ativo1 = new AtivoRequestDTO();
         ativo1.setNome("Petrobras");
         ativo1.setTipo(TipoAtivo.ACAO);
-        ativo1.setValorAtual(new BigDecimal("25.50"));
+        ativo1.setDescricao("Ação da Petrobras");
+        ativo1.setDisponivel(true);
+        ativo1.setValor(new BigDecimal("25.50"));
 
         mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -162,10 +166,12 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated());
 
         // When & Then - Tentar criar segundo ativo com mesmo nome
-        Ativo ativo2 = new Ativo();
+        AtivoRequestDTO ativo2 = new AtivoRequestDTO();
         ativo2.setNome("Petrobras");
         ativo2.setTipo(TipoAtivo.ACAO);
-        ativo2.setValorAtual(new BigDecimal("30.00"));
+        ativo2.setDescricao("Ação da Petrobras");
+        ativo2.setDisponivel(true);
+        ativo2.setValor(new BigDecimal("30.00"));
 
         mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -177,10 +183,12 @@ class AtivoControllerTest {
     @Test
     void testRemoverAtivoComSucesso() throws Exception {
         // Given - Criar um ativo
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Petrobras");
         ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setValorAtual(new BigDecimal("25.50"));
+        ativo.setDescricao("Ação da Petrobras");
+        ativo.setDisponivel(true);
+        ativo.setValor(new BigDecimal("25.50"));
 
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -188,7 +196,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // When & Then - Remover o ativo
@@ -211,10 +219,12 @@ class AtivoControllerTest {
     @Test
     void testAtualizarValorAcaoComSucesso() throws Exception {
         // Given - Criar um ativo
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Petrobras");
         ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setValorAtual(new BigDecimal("25.50"));
+        ativo.setDescricao("Ação da Petrobras");
+        ativo.setDisponivel(true);
+        ativo.setValor(new BigDecimal("25.50"));
 
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -222,7 +232,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // When & Then - Atualizar com variação maior que 1%
@@ -241,10 +251,12 @@ class AtivoControllerTest {
     @Test
     void testAtualizarValorCriptomoedaComSucesso() throws Exception {
         // Given - Criar uma criptomoeda
-        Ativo bitcoin = new Ativo();
+        AtivoRequestDTO bitcoin = new AtivoRequestDTO();
         bitcoin.setNome("Bitcoin");
         bitcoin.setTipo(TipoAtivo.CRIPTOMOEDA);
-        bitcoin.setValorAtual(new BigDecimal("150000.00"));
+        bitcoin.setDescricao("Bitcoin - primeira criptomoeda");
+        bitcoin.setDisponivel(true);
+        bitcoin.setValor(new BigDecimal("150000.00"));
 
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -252,7 +264,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // When & Then - Atualizar com variação maior que 1%
@@ -265,10 +277,12 @@ class AtivoControllerTest {
     @Test
     void testAtualizarValorComVariacaoMenorQue1Porcento() throws Exception {
         // Given - Criar um ativo
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Petrobras");
         ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setValorAtual(new BigDecimal("25.50"));
+        ativo.setDescricao("Ação da Petrobras");
+        ativo.setDisponivel(true);
+        ativo.setValor(new BigDecimal("25.50"));
 
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -276,7 +290,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // When & Then - Tentar atualizar com variação menor que 1%
@@ -303,10 +317,12 @@ class AtivoControllerTest {
     @Test
     void testAtualizarValorComReducaoMaiorQue1Porcento() throws Exception {
         // Given - Criar um ativo
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Petrobras");
         ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setValorAtual(new BigDecimal("25.50"));
+        ativo.setDescricao("Ação da Petrobras");
+        ativo.setDisponivel(true);
+        ativo.setValor(new BigDecimal("25.50"));
 
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -314,7 +330,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // When & Then - Atualizar com redução maior que 1%
@@ -327,10 +343,12 @@ class AtivoControllerTest {
     @Test
     void testAtualizarValorComVariacaoExataDe1Porcento() throws Exception {
         // Given - Criar um ativo
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Petrobras");
         ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setValorAtual(new BigDecimal("100.00"));
+        ativo.setDescricao("Ação da Petrobras");
+        ativo.setDisponivel(true);
+        ativo.setValor(new BigDecimal("100.00"));
 
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -338,7 +356,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // When & Then - Atualizar com variação exata de 1% (deve passar)
@@ -351,10 +369,12 @@ class AtivoControllerTest {
     @Test
     void testAtualizarValorComVariacaoLigeiramenteMaiorQue1Porcento() throws Exception {
         // Given - Criar um ativo
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Petrobras");
         ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setValorAtual(new BigDecimal("100.00"));
+        ativo.setDescricao("Ação da Petrobras");
+        ativo.setDisponivel(true);
+        ativo.setValor(new BigDecimal("100.00"));
 
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -362,7 +382,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // When & Then - Atualizar com variação ligeiramente maior que 1%
@@ -375,20 +395,26 @@ class AtivoControllerTest {
     @Test
     void testCriarMultiplosAtivos() throws Exception {
         // Given
-        Ativo ativo1 = new Ativo();
+        AtivoRequestDTO ativo1 = new AtivoRequestDTO();
         ativo1.setNome("Petrobras");
         ativo1.setTipo(TipoAtivo.ACAO);
-        ativo1.setValorAtual(new BigDecimal("25.50"));
+        ativo1.setDescricao("Ação da Petrobras");
+        ativo1.setDisponivel(true);
+        ativo1.setValor(new BigDecimal("25.50"));
 
-        Ativo ativo2 = new Ativo();
+        AtivoRequestDTO ativo2 = new AtivoRequestDTO();
         ativo2.setNome("Vale");
         ativo2.setTipo(TipoAtivo.ACAO);
-        ativo2.setValorAtual(new BigDecimal("30.00"));
+        ativo2.setDescricao("Ação da Vale");
+        ativo2.setDisponivel(true);
+        ativo2.setValor(new BigDecimal("30.00"));
 
-        Ativo ativo3 = new Ativo();
+        AtivoRequestDTO ativo3 = new AtivoRequestDTO();
         ativo3.setNome("Tesouro Selic");
         ativo3.setTipo(TipoAtivo.TESOURO_DIRETO);
-        ativo3.setValorAtual(new BigDecimal("100.00"));
+        ativo3.setDescricao("Tesouro Direto Selic");
+        ativo3.setDisponivel(true);
+        ativo3.setValor(new BigDecimal("100.00"));
 
         // When & Then - Criar primeiro ativo
         mockMvc.perform(post("/api/ativos")
@@ -419,10 +445,12 @@ class AtivoControllerTest {
     @Test
     void testAtualizarValorComParametroInvalido() throws Exception {
         // Given - Criar um ativo
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Petrobras");
         ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setValorAtual(new BigDecimal("25.50"));
+        ativo.setDescricao("Ação da Petrobras");
+        ativo.setDisponivel(true);
+        ativo.setValor(new BigDecimal("25.50"));
 
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -430,7 +458,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // When & Then - Tentar atualizar com parâmetro inválido
@@ -454,11 +482,11 @@ class AtivoControllerTest {
     @Test
     void testCriarAtivoComDadosIncompletos() throws Exception {
         // Given - Ativo sem nome
-        Ativo ativoInvalido = new Ativo();
+        AtivoRequestDTO ativoInvalido = new AtivoRequestDTO();
         ativoInvalido.setTipo(TipoAtivo.ACAO);
-        ativoInvalido.setValorAtual(new BigDecimal("25.50"));
+        ativoInvalido.setValor(new BigDecimal("25.50"));
 
-        // When & Then - Deve falhar por causa da restrição `nullable=false` na entidade
+        // When & Then - Deve falhar por causa da validação do DTO
         mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(ativoInvalido)))
@@ -468,10 +496,12 @@ class AtivoControllerTest {
     @Test
     void testFluxoCompletoCriarAtualizarRemover() throws Exception {
         // Given - Criar um ativo
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Teste Fluxo");
         ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setValorAtual(new BigDecimal("100.00"));
+        ativo.setDescricao("Ativo para teste de fluxo");
+        ativo.setDisponivel(true);
+        ativo.setValor(new BigDecimal("100.00"));
 
         // When & Then - 1. Criar ativo
         String response = mockMvc.perform(post("/api/ativos")
@@ -480,7 +510,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // Verificar se foi criado
@@ -510,11 +540,12 @@ class AtivoControllerTest {
     @Test
     void testAtivarAtivoComSucesso() throws Exception {
         // Given - Criar um ativo desativado
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Petrobras");
         ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDescricao("Ação da Petrobras");
         ativo.setDisponivel(false);
-        ativo.setValorAtual(new BigDecimal("25.50"));
+        ativo.setValor(new BigDecimal("25.50"));
 
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -522,7 +553,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // When & Then - Ativar o ativo
@@ -540,11 +571,12 @@ class AtivoControllerTest {
     @Test
     void testDesativarAtivoComSucesso() throws Exception {
         // Given - Criar um ativo ativado
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Vale");
         ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDescricao("Ação da Vale");
         ativo.setDisponivel(true);
-        ativo.setValorAtual(new BigDecimal("30.00"));
+        ativo.setValor(new BigDecimal("30.00"));
 
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -552,7 +584,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // When & Then - Desativar o ativo
@@ -578,23 +610,26 @@ class AtivoControllerTest {
     @Test
     void testListarAtivosDisponiveis() throws Exception {
         // Given - Criar ativos com diferentes status
-        Ativo ativo1 = new Ativo();
+        AtivoRequestDTO ativo1 = new AtivoRequestDTO();
         ativo1.setNome("Petrobras");
         ativo1.setTipo(TipoAtivo.ACAO);
+        ativo1.setDescricao("Ação da Petrobras");
         ativo1.setDisponivel(true);
-        ativo1.setValorAtual(new BigDecimal("25.50"));
+        ativo1.setValor(new BigDecimal("25.50"));
 
-        Ativo ativo2 = new Ativo();
+        AtivoRequestDTO ativo2 = new AtivoRequestDTO();
         ativo2.setNome("Vale");
         ativo2.setTipo(TipoAtivo.ACAO);
+        ativo2.setDescricao("Ação da Vale");
         ativo2.setDisponivel(false);
-        ativo2.setValorAtual(new BigDecimal("30.00"));
+        ativo2.setValor(new BigDecimal("30.00"));
 
-        Ativo ativo3 = new Ativo();
+        AtivoRequestDTO ativo3 = new AtivoRequestDTO();
         ativo3.setNome("Bitcoin");
         ativo3.setTipo(TipoAtivo.CRIPTOMOEDA);
+        ativo3.setDescricao("Bitcoin - primeira criptomoeda");
         ativo3.setDisponivel(true);
-        ativo3.setValorAtual(new BigDecimal("150000.00"));
+        ativo3.setValor(new BigDecimal("150000.00"));
 
         // Criar os ativos
         mockMvc.perform(post("/api/ativos")
@@ -623,23 +658,26 @@ class AtivoControllerTest {
     @Test
     void testListarAtivosIndisponiveis() throws Exception {
         // Given - Criar ativos com diferentes status
-        Ativo ativo1 = new Ativo();
+        AtivoRequestDTO ativo1 = new AtivoRequestDTO();
         ativo1.setNome("Petrobras");
         ativo1.setTipo(TipoAtivo.ACAO);
+        ativo1.setDescricao("Ação da Petrobras");
         ativo1.setDisponivel(true);
-        ativo1.setValorAtual(new BigDecimal("25.50"));
+        ativo1.setValor(new BigDecimal("25.50"));
 
-        Ativo ativo2 = new Ativo();
+        AtivoRequestDTO ativo2 = new AtivoRequestDTO();
         ativo2.setNome("Vale");
         ativo2.setTipo(TipoAtivo.ACAO);
+        ativo2.setDescricao("Ação da Vale");
         ativo2.setDisponivel(false);
-        ativo2.setValorAtual(new BigDecimal("30.00"));
+        ativo2.setValor(new BigDecimal("30.00"));
 
-        Ativo ativo3 = new Ativo();
+        AtivoRequestDTO ativo3 = new AtivoRequestDTO();
         ativo3.setNome("Tesouro Selic");
         ativo3.setTipo(TipoAtivo.TESOURO_DIRETO);
+        ativo3.setDescricao("Tesouro Direto Selic");
         ativo3.setDisponivel(false);
-        ativo3.setValorAtual(new BigDecimal("100.00"));
+        ativo3.setValor(new BigDecimal("100.00"));
 
         // Criar os ativos
         mockMvc.perform(post("/api/ativos")
@@ -668,23 +706,26 @@ class AtivoControllerTest {
     @Test
     void testListarTodosAtivos() throws Exception {
         // Given - Criar múltiplos ativos
-        Ativo ativo1 = new Ativo();
+        AtivoRequestDTO ativo1 = new AtivoRequestDTO();
         ativo1.setNome("Petrobras");
         ativo1.setTipo(TipoAtivo.ACAO);
+        ativo1.setDescricao("Ação da Petrobras");
         ativo1.setDisponivel(true);
-        ativo1.setValorAtual(new BigDecimal("25.50"));
+        ativo1.setValor(new BigDecimal("25.50"));
 
-        Ativo ativo2 = new Ativo();
+        AtivoRequestDTO ativo2 = new AtivoRequestDTO();
         ativo2.setNome("Vale");
         ativo2.setTipo(TipoAtivo.ACAO);
+        ativo2.setDescricao("Ação da Vale");
         ativo2.setDisponivel(false);
-        ativo2.setValorAtual(new BigDecimal("30.00"));
+        ativo2.setValor(new BigDecimal("30.00"));
 
-        Ativo ativo3 = new Ativo();
+        AtivoRequestDTO ativo3 = new AtivoRequestDTO();
         ativo3.setNome("Bitcoin");
         ativo3.setTipo(TipoAtivo.CRIPTOMOEDA);
+        ativo3.setDescricao("Bitcoin - primeira criptomoeda");
         ativo3.setDisponivel(true);
-        ativo3.setValorAtual(new BigDecimal("150000.00"));
+        ativo3.setValor(new BigDecimal("150000.00"));
 
         // Criar os ativos
         mockMvc.perform(post("/api/ativos")
@@ -711,12 +752,12 @@ class AtivoControllerTest {
     @Test
     void testBuscarAtivoPorIdComSucesso() throws Exception {
         // Given - Criar um ativo completo
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("ETF Brasil");
         ativo.setTipo(TipoAtivo.ACAO);
         ativo.setDescricao("Fundo de índice brasileiro");
         ativo.setDisponivel(true);
-        ativo.setValorAtual(new BigDecimal("123.45"));
+        ativo.setValor(new BigDecimal("123.45"));
 
         String response = mockMvc.perform(post("/api/ativos")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -724,7 +765,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo salvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO salvo = objectMapper.readValue(response, AtivoResponseDTO.class);
 
         // When & Then - Buscar por ID e verificar campos detalhados
         mockMvc.perform(get("/api/ativos/{id}", salvo.getId()))
@@ -747,11 +788,12 @@ class AtivoControllerTest {
     @Test
     void testFluxoCompletoAtivarDesativar() throws Exception {
         // Given - Criar um ativo
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Teste Fluxo");
         ativo.setTipo(TipoAtivo.ACAO);
+        ativo.setDescricao("Ativo para teste de fluxo de ativação/desativação");
         ativo.setDisponivel(true);
-        ativo.setValorAtual(new BigDecimal("100.00"));
+        ativo.setValor(new BigDecimal("100.00"));
 
         // When & Then - 1. Criar ativo
         String response = mockMvc.perform(post("/api/ativos")
@@ -760,7 +802,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // Verificar se foi criado como disponível
@@ -788,10 +830,12 @@ class AtivoControllerTest {
     @Test
     void testAtivarDesativarComParametroInvalido() throws Exception {
         // Given - Criar um ativo
-        Ativo ativo = new Ativo();
+        AtivoRequestDTO ativo = new AtivoRequestDTO();
         ativo.setNome("Teste Parametro");
         ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setValorAtual(new BigDecimal("100.00"));
+        ativo.setDescricao("Ativo para teste de parâmetro inválido");
+        ativo.setDisponivel(true);
+        ativo.setValor(new BigDecimal("100.00"));
 
         String response = mockMvc.perform(post("/api/ativos")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -799,7 +843,7 @@ class AtivoControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
 
-        Ativo ativoSalvo = objectMapper.readValue(response, Ativo.class);
+        AtivoResponseDTO ativoSalvo = objectMapper.readValue(response, AtivoResponseDTO.class);
         Long id = ativoSalvo.getId();
 
         // When & Then - Tentar ativar com parâmetro inválido
@@ -811,17 +855,19 @@ class AtivoControllerTest {
     @Test
     void testAtivosDesativadosNaoAparecemEmDisponiveis() throws Exception {
         // Given - Criar ativos mistos
-        Ativo ativo1 = new Ativo();
+        AtivoRequestDTO ativo1 = new AtivoRequestDTO();
         ativo1.setNome("Disponível");
         ativo1.setTipo(TipoAtivo.ACAO);
+        ativo1.setDescricao("Ativo disponível para teste");
         ativo1.setDisponivel(true);
-        ativo1.setValorAtual(new BigDecimal("25.50"));
+        ativo1.setValor(new BigDecimal("25.50"));
 
-        Ativo ativo2 = new Ativo();
+        AtivoRequestDTO ativo2 = new AtivoRequestDTO();
         ativo2.setNome("Indisponível");
         ativo2.setTipo(TipoAtivo.ACAO);
+        ativo2.setDescricao("Ativo indisponível para teste");
         ativo2.setDisponivel(false);
-        ativo2.setValorAtual(new BigDecimal("30.00"));
+        ativo2.setValor(new BigDecimal("30.00"));
 
         // Criar os ativos
         mockMvc.perform(post("/api/ativos")
@@ -850,17 +896,19 @@ class AtivoControllerTest {
     @Test
     void testAtivosDesativadosAindaAparecemEmTodos() throws Exception {
         // Given - Criar ativos mistos
-        Ativo ativo1 = new Ativo();
+        AtivoRequestDTO ativo1 = new AtivoRequestDTO();
         ativo1.setNome("Disponível");
         ativo1.setTipo(TipoAtivo.ACAO);
+        ativo1.setDescricao("Ativo disponível para teste");
         ativo1.setDisponivel(true);
-        ativo1.setValorAtual(new BigDecimal("25.50"));
+        ativo1.setValor(new BigDecimal("25.50"));
 
-        Ativo ativo2 = new Ativo();
+        AtivoRequestDTO ativo2 = new AtivoRequestDTO();
         ativo2.setNome("Indisponível");
         ativo2.setTipo(TipoAtivo.ACAO);
+        ativo2.setDescricao("Ativo indisponível para teste");
         ativo2.setDisponivel(false);
-        ativo2.setValorAtual(new BigDecimal("30.00"));
+        ativo2.setValor(new BigDecimal("30.00"));
 
         // Criar os ativos
         mockMvc.perform(post("/api/ativos")
@@ -890,12 +938,20 @@ class AtivoControllerTest {
         clientePremium.setCodigoAcesso("333333");
         clienteRepository.save(clientePremium);
 
-        Ativo ativo = new Ativo();
-        ativo.setNome("Ação para Notificar");
-        ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setDisponivel(true);
-        ativo.setValorAtual(new BigDecimal("100.00"));
-        repository.save(ativo);
+        AtivoRequestDTO ativoRequest = new AtivoRequestDTO();
+        ativoRequest.setNome("Ação para Notificar");
+        ativoRequest.setTipo(TipoAtivo.ACAO);
+        ativoRequest.setDescricao("Ação para teste de notificação de variação de preço");
+        ativoRequest.setDisponivel(true);
+        ativoRequest.setValor(new BigDecimal("100.00"));
+        
+        String response = mockMvc.perform(post("/api/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativoRequest)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        
+        AtivoResponseDTO ativo = objectMapper.readValue(response, AtivoResponseDTO.class);
 
         // Given - Registrar interesse na variação de preço
         InteresseDTO interesseDTO = new InteresseDTO();
@@ -928,12 +984,20 @@ class AtivoControllerTest {
         cliente.setCodigoAcesso("444444");
         clienteRepository.save(cliente);
 
-        Ativo ativo = new Ativo();
-        ativo.setNome("Ação para Ativar");
-        ativo.setTipo(TipoAtivo.ACAO);
-        ativo.setDisponivel(false);
-        ativo.setValorAtual(new BigDecimal("50.00"));
-        repository.save(ativo);
+        AtivoRequestDTO ativoRequest = new AtivoRequestDTO();
+        ativoRequest.setNome("Ação para Ativar");
+        ativoRequest.setTipo(TipoAtivo.ACAO);
+        ativoRequest.setDescricao("Ação para teste de notificação de disponibilidade");
+        ativoRequest.setDisponivel(false);
+        ativoRequest.setValor(new BigDecimal("50.00"));
+        
+        String response = mockMvc.perform(post("/api/ativos")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ativoRequest)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        
+        AtivoResponseDTO ativo = objectMapper.readValue(response, AtivoResponseDTO.class);
 
         // Given - Registrar interesse na disponibilidade
         InteresseDTO interesseDTO = new InteresseDTO();

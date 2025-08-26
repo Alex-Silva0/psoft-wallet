@@ -12,7 +12,6 @@ import org.springframework.web.context.request.WebRequest;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -109,15 +108,26 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = ex.getBindingResult().getFieldErrors().stream()
-                .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
+        String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+                .filter(error -> {
+                    String code = error.getCode();
+                    if (code == null) {
+                        return false;
+                    }
+                    return code.equals("Pattern");
+                })
+                .findFirst()
+                .map(FieldError::getDefaultMessage)
+                .orElseGet(() -> ex.getBindingResult().getFieldErrors().stream()
+                        .findFirst()
+                        .map(FieldError::getDefaultMessage)
+                        .orElse("Erros de validação encontrados."));
 
         Map<String, Object> errorResponse = new HashMap<>();
         errorResponse.put("status", 400);
         errorResponse.put("error", "Bad Request");
-        errorResponse.put("message", "Erros de validação encontrados.");
-        errorResponse.put("errors", errors);
+        errorResponse.put("message", errorMessage);
 
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
-} 
+}

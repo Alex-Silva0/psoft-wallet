@@ -16,12 +16,7 @@ public class ClienteService {
         this.repository = repository;
     }
 
-    public Cliente criarCliente(Cliente cliente) {
-        if (cliente.getCodigoAcesso() == null || cliente.getCodigoAcesso().length() != 6 || 
-            !cliente.getCodigoAcesso().matches("^\\d{6}$")) {
-            throw new DadosInvalidosException("Código de acesso deve ter exatamente 6 dígitos");
-        }
-        
+    public Cliente criarCliente(Cliente cliente) {        
         return repository.save(cliente);
     }
 
@@ -45,12 +40,6 @@ public class ClienteService {
 
         if (codigoAcesso == null || !codigoAcesso.equals(clienteExistente.getCodigoAcesso())) {
             throw new CodigoAcessoIncorretoException("Código de acesso incorreto ou não informado");
-        }
-
-        if (cliente.getCodigoAcesso() != null) {
-            if (cliente.getCodigoAcesso().length() != 6 || !cliente.getCodigoAcesso().matches("^\\d{6}$")) {
-                throw new DadosInvalidosException("Código de acesso deve ter exatamente 6 dígitos");
-            }
         }
 
         clienteExistente.setNomeCompleto(cliente.getNomeCompleto());
@@ -91,10 +80,9 @@ public class ClienteService {
                 .orElseThrow(() -> new CodigoAcessoIncorretoException("Código de acesso incorreto"));
     }
 
-    public List<Cliente> listarAtivosPorPlano(String codigoAcesso) {
+    public Cliente buscarClientePorCodigoAcesso(String codigoAcesso) {
         Cliente cliente = this.validarAcesso(codigoAcesso);
-        // Retornar apenas o cliente (sem código de acesso) para validação
         cliente.setCodigoAcesso(null);
-        return List.of(cliente);
+        return cliente;
     }
 } 

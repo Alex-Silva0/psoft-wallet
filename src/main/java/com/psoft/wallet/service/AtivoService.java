@@ -1,5 +1,6 @@
 package com.psoft.wallet.service;
 
+import com.psoft.wallet.dto.AtivoRequestDTO;
 import com.psoft.wallet.enums.TipoInteresse;
 import com.psoft.wallet.exception.AtivoNaoEncontradoException;
 import com.psoft.wallet.exception.VariacaoInvalidaException;
@@ -29,10 +30,18 @@ public class AtivoService {
     }
 
     @Transactional
-    public Ativo criarAtivo(Ativo ativo) {
-        ativoRepository.findByNome(ativo.getNome()).ifPresent(a -> {
-            throw new RegraDeNegocioException("Já existe um ativo com o nome: " + ativo.getNome());
+    public Ativo criarAtivo(AtivoRequestDTO ativoRequest) {
+        ativoRepository.findByNome(ativoRequest.getNome()).ifPresent(a -> {
+            throw new RegraDeNegocioException("Já existe um ativo com o nome: " + ativoRequest.getNome());
         });
+        
+        Ativo ativo = new Ativo();
+        ativo.setNome(ativoRequest.getNome());
+        ativo.setTipo(ativoRequest.getTipo());
+        ativo.setDescricao(ativoRequest.getDescricao());
+        ativo.setDisponivel(ativoRequest.getDisponivel());
+        ativo.setValorAtual(ativoRequest.getValor());
+        
         return ativoRepository.save(ativo);
     }
 
@@ -61,7 +70,7 @@ public class AtivoService {
         ativo.setValorAtual(novoValor);
         Ativo ativoSalvo = ativoRepository.save(ativo);
 
-        verificarEnotificarVariacaoPreco(ativoSalvo, valorAntigo);
+        notifyIfPriceVariationSignificant(ativoSalvo, valorAntigo);
 
         return ativoSalvo;
     }
@@ -106,7 +115,7 @@ public class AtivoService {
                 .orElseThrow(() -> new AtivoNaoEncontradoException("Ativo com ID " + id + " não encontrado"));
     }
 
-    private void verificarEnotificarVariacaoPreco(Ativo ativo, BigDecimal valorAntigo) {
+    private void notifyIfPriceVariationSignificant(Ativo ativo, BigDecimal valorAntigo) {
         if (valorAntigo.compareTo(BigDecimal.ZERO) == 0) return;
 
         BigDecimal variacao = ativo.getValorAtual().subtract(valorAntigo);

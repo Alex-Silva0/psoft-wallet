@@ -1,5 +1,6 @@
 package com.psoft.wallet.controller;
 
+import com.psoft.wallet.dto.AtivoResponseDTO;
 import com.psoft.wallet.enums.TipoPlano;
 import org.springframework.web.bind.annotation.*;
 import com.psoft.wallet.model.Ativo;
@@ -23,22 +24,33 @@ public class AtivoClienteController {
     }
 
     @GetMapping("/disponiveis")
-    public List<Ativo> listarAtivosDisponiveisParaPlano(@RequestParam String codigoAcesso) {
-        List<Cliente> clientes = clienteService.listarAtivosPorPlano(codigoAcesso);
-        if (clientes.isEmpty()) {
-            throw new RuntimeException("Cliente não encontrado");
-        }
-        
-        Cliente cliente = clientes.get(0);
+    public List<AtivoResponseDTO> listarAtivosDisponiveisParaPlano(@RequestParam String codigoAcesso) {
+        Cliente cliente = clienteService.buscarClientePorCodigoAcesso(codigoAcesso);
 
         List<Ativo> todosAtivos = ativoService.listarAtivosDisponiveis();
 
+        List<Ativo> ativosFiltrados;
         if (cliente.getPlano() == TipoPlano.NORMAL) {
-            return todosAtivos.stream()
+            ativosFiltrados = todosAtivos.stream()
                 .filter(ativo -> ativo.getTipo() == TipoAtivo.TESOURO_DIRETO)
                 .collect(Collectors.toList());
         } else {
-            return todosAtivos;
+            ativosFiltrados = todosAtivos;
         }
+
+        return ativosFiltrados.stream()
+            .map(this::convertToResponseDTO)
+            .collect(Collectors.toList());
     }
-} 
+
+    private AtivoResponseDTO convertToResponseDTO(Ativo ativo) {
+        return new AtivoResponseDTO(
+            ativo.getId(),
+            ativo.getNome(),
+            ativo.getTipo(),
+            ativo.getDescricao(),
+            ativo.isDisponivel(),
+            ativo.getValorAtual()
+        );
+    }
+}
