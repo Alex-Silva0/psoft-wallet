@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ResgateRepository extends JpaRepository<Resgate, Long> {
+public interface ResgateRepository extends JpaRepository<Resgate, Long>, ResgateRepositoryCustom {
     
     List<Resgate> findAllByCliente(Cliente cliente);
     

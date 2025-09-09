@@ -2,11 +2,19 @@ package com.psoft.wallet.controller;
 
 import com.psoft.wallet.dto.ClienteRequestDTO;
 import com.psoft.wallet.dto.ClienteResponseDTO;
+import com.psoft.wallet.dto.OperacaoDTO;
+import com.psoft.wallet.enums.TipoAtivo;
 import org.springframework.web.bind.annotation.*;
 import com.psoft.wallet.model.Cliente;
 import com.psoft.wallet.service.ClienteService;
+import com.psoft.wallet.service.ExtratoService;
+import com.psoft.wallet.service.HistoricoService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 
+import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -14,9 +22,13 @@ import java.util.stream.Collectors;
 @RequestMapping("/clientes")
 public class ClienteController {
     private final ClienteService service;
+    private final HistoricoService historicoService;
+    private final ExtratoService extratoService;
 
-    public ClienteController(ClienteService service) {
+    public ClienteController(ClienteService service, HistoricoService historicoService, ExtratoService extratoService) {
         this.service = service;
+        this.historicoService = historicoService;
+        this.extratoService = extratoService;
     }
 
     @PostMapping
@@ -64,6 +76,28 @@ public class ClienteController {
     public void removerCliente(@PathVariable Long id, 
                               @RequestParam String codigoAcesso) {
         service.removerCliente(id, codigoAcesso);
+    }
+
+    @GetMapping("/{codigoAcesso}/historico-completo")
+    public ResponseEntity<List<OperacaoDTO>> getHistoricoCompletoCliente(
+            @PathVariable String codigoAcesso,
+            @RequestParam(required = false) TipoAtivo tipoAtivo,
+            @RequestParam(required = false) LocalDate dataInicio,
+            @RequestParam(required = false) LocalDate dataFim,
+            @RequestParam(required = false) String status) {
+        List<OperacaoDTO> historico = historicoService.getHistoricoCliente(codigoAcesso, tipoAtivo, dataInicio, dataFim, status);
+        return ResponseEntity.ok(historico);
+    }
+
+    @GetMapping("/{codigoAcesso}/extrato-csv")
+    public ResponseEntity<String> exportarExtratoCSV(@PathVariable String codigoAcesso) throws IOException {
+        String csvData = extratoService.gerarExtratoCSV(codigoAcesso);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=extrato.csv");
+        headers.add(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8");
+
+        return ResponseEntity.ok().headers(headers).body(csvData);
     }
 
     private ClienteResponseDTO convertToResponseDTO(Cliente cliente) {

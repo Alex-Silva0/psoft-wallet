@@ -1,7 +1,7 @@
 package com.psoft.wallet.controller;
 
 import com.psoft.wallet.exception.*;
-import com.psoft.wallet.service.DadosInvalidosException;
+import com.psoft.wallet.exception.DadosInvalidosException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
