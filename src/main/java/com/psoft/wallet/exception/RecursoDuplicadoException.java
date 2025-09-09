@@ -1,4 +1,4 @@
-package com.psoft.wallet.service;
+package com.psoft.wallet.exception;
 
 public class RecursoDuplicadoException extends RuntimeException {
     public RecursoDuplicadoException(String message) {
